@@ -1,0 +1,257 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{{ url_for('budgets.list_budgets') }}" class="text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-500">Budgets</a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="ml-1 text-gray-700 dark:text-gray-300">{{ title }}</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
+        <p class="text-gray-500 dark:text-gray-400">Define budget amounts for revenue and expense accounts</p>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" action="{% if budget %}{{ url_for('budgets.edit_budget', budget_id=budget.id) }}{% else %}{{ url_for('budgets.new_budget') }}{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Basic Info Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Budget Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Budget Name *</label>
+                    <input type="text" name="name" id="name" required
+                           value="{% if budget %}{{ budget.name }}{% endif %}"
+                           class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                           placeholder="e.g., Annual Budget 2024">
+                </div>
+                <div>
+                    <label for="fiscal_year" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fiscal Year *</label>
+                    <select name="fiscal_year" id="fiscal_year" required
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        {% for year in range(current_year - 1, current_year + 3) %}
+                        <option value="{{ year }}" {% if budget and budget.fiscal_year == year %}selected{% elif year == current_year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <input type="text" name="description" id="description"
+                           value="{% if budget %}{{ budget.description or '' }}{% endif %}"
+                           class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                           placeholder="Optional description">
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Items Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Budget Line Items</h2>
+                <button type="button" id="add-item-btn" 
+                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/30">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Add Line
+                </button>
+            </div>
+
+            <!-- Revenue Section -->
+            <div class="mb-6">
+                <h3 class="text-md font-medium text-green-700 dark:text-green-400 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                    </svg>
+                    Revenue Accounts
+                </h3>
+                <div id="revenue-items" class="space-y-3">
+                    {% if budget %}
+                        {% for item in budget.items %}
+                            {% if item.account_type == 'Revenue' %}
+                            <div class="item-row flex flex-wrap gap-3 items-end p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <div class="flex-1 min-w-[200px]">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Account</label>
+                                    <select name="account_id[]" required
+                                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        {% for acc in accounts %}
+                                            {% if acc.type == 'Revenue' %}
+                                            <option value="{{ acc.id }}" {% if item.account_id == acc.id %}selected{% endif %}>{{ acc.code }} - {{ acc.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="w-32">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+                                    <input type="number" name="amount[]" step="0.01" min="0" required
+                                           value="{{ item.amount }}"
+                                           class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                </div>
+                                <div class="w-28">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Month (Optional)</label>
+                                    <select name="month[]"
+                                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        <option value="">Annual</option>
+                                        {% for m in range(1, 13) %}
+                                        <option value="{{ m }}" {% if item.month == m %}selected{% endif %}>{{ m }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="button" class="remove-item-btn p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Expense Section -->
+            <div>
+                <h3 class="text-md font-medium text-red-700 dark:text-red-400 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"/>
+                    </svg>
+                    Expense Accounts
+                </h3>
+                <div id="expense-items" class="space-y-3">
+                    {% if budget %}
+                        {% for item in budget.items %}
+                            {% if item.account_type == 'Expense' %}
+                            <div class="item-row flex flex-wrap gap-3 items-end p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <div class="flex-1 min-w-[200px]">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Account</label>
+                                    <select name="account_id[]" required
+                                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        {% for acc in accounts %}
+                                            {% if acc.type == 'Expense' %}
+                                            <option value="{{ acc.id }}" {% if item.account_id == acc.id %}selected{% endif %}>{{ acc.code }} - {{ acc.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="w-32">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+                                    <input type="number" name="amount[]" step="0.01" min="0" required
+                                           value="{{ item.amount }}"
+                                           class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                </div>
+                                <div class="w-28">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Month (Optional)</label>
+                                    <select name="month[]"
+                                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        <option value="">Annual</option>
+                                        {% for m in range(1, 13) %}
+                                        <option value="{{ m }}" {% if item.month == m %}selected{% endif %}>{{ m }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="button" class="remove-item-btn p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-4">
+            <a href="{{ url_for('budgets.list_budgets') }}" 
+               class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700">
+                {% if budget %}Update Budget{% else %}Create Budget{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Account data for dynamic dropdowns
+const accounts = {{ accounts | tojson }};
+
+// Generate account options HTML
+function getAccountOptions(type, selectedId = null) {
+    return accounts
+        .filter(acc => acc.type === type)
+        .map(acc => `<option value="${acc.id}" ${selectedId == acc.id ? 'selected' : ''}>${acc.code} - ${acc.name}</option>`)
+        .join('');
+}
+
+// Create item row HTML
+function createItemRow(type) {
+    const div = document.createElement('div');
+    div.className = 'item-row flex flex-wrap gap-3 items-end p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
+    div.innerHTML = `
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Account</label>
+            <select name="account_id[]" required
+                    class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                ${getAccountOptions(type)}
+            </select>
+        </div>
+        <div class="w-32">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+            <input type="number" name="amount[]" step="0.01" min="0" required value="0"
+                   class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+        </div>
+        <div class="w-28">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Month</label>
+            <select name="month[]"
+                    class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                <option value="">Annual</option>
+                ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+            </select>
+        </div>
+        <button type="button" class="remove-item-btn p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+        </button>
+    `;
+    return div;
+}
+
+// Add item button handler
+document.getElementById('add-item-btn').addEventListener('click', function() {
+    const type = prompt('Enter type (Revenue or Expense):');
+    if (type === 'Revenue') {
+        document.getElementById('revenue-items').appendChild(createItemRow('Revenue'));
+    } else if (type === 'Expense') {
+        document.getElementById('expense-items').appendChild(createItemRow('Expense'));
+    }
+});
+
+// Remove item button handler (using event delegation)
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-item-btn')) {
+        e.target.closest('.item-row').remove();
+    }
+});
+</script>
+{% endblock %}

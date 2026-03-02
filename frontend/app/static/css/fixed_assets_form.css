@@ -1,0 +1,39 @@
+/* Fixed Assets Form Styles */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.form-control, .form-select {
+    border-radius: 0.25rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.btn-outline {
+    border-color: #dee2e6;
+}
+
+.btn-outline:hover {
+    background-color: #f8f9fa;
+}
+
+h5 {
+    font-weight: 600;
+}

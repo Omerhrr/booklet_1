@@ -1,0 +1,111 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Balance Sheet</div>
+<div class="report-period">As of: {{ report.as_of_date or now.strftime('%Y-%m-%d') }}</div>
+
+<!-- Assets Section -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 13px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;">ASSETS</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Code</th>
+                <th style="width: 60%;">Account</th>
+                <th style="width: 25%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report.assets %}
+            <tr>
+                <td>{{ item.account_code or '' }}</td>
+                <td>{{ item.account_name or '' }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.balance|float) if item.balance else "0.00" }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td></td>
+                <td><strong>Total Assets</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(report.total_assets|float) if report.total_assets else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Liabilities Section -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 13px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;">LIABILITIES</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Code</th>
+                <th style="width: 60%;">Account</th>
+                <th style="width: 25%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report.liabilities %}
+            <tr>
+                <td>{{ item.account_code or '' }}</td>
+                <td>{{ item.account_name or '' }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.balance|float) if item.balance else "0.00" }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td></td>
+                <td><strong>Total Liabilities</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(report.total_liabilities|float) if report.total_liabilities else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Equity Section -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 13px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;">EQUITY</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Code</th>
+                <th style="width: 60%;">Account</th>
+                <th style="width: 25%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report.equity %}
+            <tr>
+                <td>{{ item.account_code or '' }}</td>
+                <td>{{ item.account_name or '' }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.balance|float) if item.balance else "0.00" }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td></td>
+                <td><strong>Total Equity</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(report.total_equity|float) if report.total_equity else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Summary -->
+<div class="summary-box" style="margin-top: 20px;">
+    <div class="summary-row">
+        <span class="summary-label">Total Liabilities + Equity:</span>
+        <span class="summary-value">{{ "%.2f"|format((report.total_liabilities|float + report.total_equity|float)) }}</span>
+    </div>
+    <div class="summary-row" style="margin-top: 5px;">
+        <span class="summary-label">Balance Check:</span>
+        {% set liab_equity = (report.total_liabilities|float + report.total_equity|float) %}
+        {% set diff = (report.total_assets|float - liab_equity)|abs %}
+        {% if diff < 0.01 %}
+        <span class="summary-value amount-positive">BALANCED ✓</span>
+        {% else %}
+        <span class="summary-value amount-negative">OUT OF BALANCE (Diff: {{ "%.2f"|format(diff) }})</span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

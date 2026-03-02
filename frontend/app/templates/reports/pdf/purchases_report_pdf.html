@@ -1,0 +1,81 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Purchases Report</div>
+<div class="report-period">Period: {{ start_date or 'All Time' }} {% if end_date %}to {{ end_date }}{% endif %}</div>
+
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">Total Purchases:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_purchases|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total Bills:</span>
+        <span class="summary-value">{{ report.total_bills|default(0) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Paid:</span>
+        <span class="summary-value amount-positive">{{ "%.2f"|format(report.paid|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Outstanding:</span>
+        <span class="summary-value amount-negative">{{ "%.2f"|format(report.outstanding|float) }}</span>
+    </div>
+</div>
+
+{% if report.top_vendors %}
+<h3>Top Vendors</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Vendor</th>
+            <th class="text-right">Total Purchases</th>
+            <th class="text-center">Bills</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vendor in report.top_vendors %}
+        <tr>
+            <td>{{ vendor.name }}</td>
+            <td class="text-right">{{ "%.2f"|format(vendor.total_purchases|float) }}</td>
+            <td class="text-center">{{ vendor.bill_count }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if report.bills %}
+<h3>Bill Details</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Bill #</th>
+            <th>Date</th>
+            <th>Vendor</th>
+            <th class="text-right">Amount</th>
+            <th class="text-center">Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for bill in report.bills %}
+        <tr>
+            <td>{{ bill.bill_number }}</td>
+            <td>{{ bill.bill_date }}</td>
+            <td>{{ bill.vendor_name or '-' }}</td>
+            <td class="text-right">{{ "%.2f"|format(bill.total_amount|float) }}</td>
+            <td class="text-center">
+                {% if bill.status == 'paid' %}
+                <span class="badge badge-success">Paid</span>
+                {% elif bill.status == 'partial' %}
+                <span class="badge badge-warning">Partial</span>
+                {% else %}
+                <span class="badge badge-danger">{{ bill.status|title }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

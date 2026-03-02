@@ -1,0 +1,93 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ journal.voucher_number }}</h1>
+            <p class="text-gray-500 dark:text-gray-400">Journal Entry Details</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('accounting.journal') }}" class="text-gray-900 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                Back to List
+            </a>
+            {% if not journal.is_posted %}
+            <form method="POST" action="{{ url_for('accounting.post_journal', journal_id=journal.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                    Post Entry
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Journal Info -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Transaction Date</p>
+            <p class="text-lg font-medium text-gray-900 dark:text-white">{{ journal.transaction_date }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+            {% if journal.is_posted %}
+            <span class="px-2.5 py-0.5 rounded text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Posted</span>
+            {% else %}
+            <span class="px-2.5 py-0.5 rounded text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Draft</span>
+            {% endif %}
+        </div>
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Reference</p>
+            <p class="text-lg font-medium text-gray-900 dark:text-white">{{ journal.reference or '-' }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Description</p>
+            <p class="text-lg font-medium text-gray-900 dark:text-white">{{ journal.description or '-' }}</p>
+        </div>
+    </div>
+
+    <!-- Journal Lines -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+        <div class="p-6 border-b dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Journal Lines</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">Account</th>
+                        <th class="px-6 py-3">Description</th>
+                        <th class="px-6 py-3 text-right">Debit</th>
+                        <th class="px-6 py-3 text-right">Credit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in journal.ledger_entries %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <td class="px-6 py-4">
+                            {% if entry.account_code %}{{ entry.account_code }} - {% endif %}{{ entry.account_name or '-' }}
+                        </td>
+                        <td class="px-6 py-4">{{ entry.description or '-' }}</td>
+                        <td class="px-6 py-4 text-right {% if entry.debit > 0 %}font-medium text-green-600{% endif %}">
+                            {% if entry.debit > 0 %}{{ "%.2f"|format(entry.debit) }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right {% if entry.credit > 0 %}font-medium text-red-600{% endif %}">
+                            {% if entry.credit > 0 %}{{ "%.2f"|format(entry.credit) }}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="bg-gray-50 dark:bg-gray-700 font-bold">
+                        <td class="px-6 py-4" colspan="2">Total</td>
+                        <td class="px-6 py-4 text-right">
+                            {{ "%.2f"|format(journal.ledger_entries | sum(attribute='debit') or 0) }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {{ "%.2f"|format(journal.ledger_entries | sum(attribute='credit') or 0) }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

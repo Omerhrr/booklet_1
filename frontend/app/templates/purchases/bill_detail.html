@@ -1,0 +1,226 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}Bill {{ bill.get('bill_number', '') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Bill {{ bill.get('bill_number', '') }}</h2>
+                {% set status = bill.get('status', 'draft')|lower %}
+                {% if status == 'draft' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Draft</span>
+                {% elif status == 'pending' or status == 'unpaid' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Unpaid</span>
+                {% elif status == 'partial' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">Partial</span>
+                {% elif status == 'paid' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Paid</span>
+                {% elif status == 'returned' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">Returned</span>
+                {% else %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">{{ status|title }}</span>
+                {% endif %}
+            </div>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Purchase Bill Details</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{{ url_for('purchases.list_bills') }}" class="inline-flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                </svg>
+                Back to Bills
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Bill Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bill Information</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Vendor</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ bill.get('vendor_name', 'N/A') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Bill Date</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ bill.get('bill_date', '-') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Due Date</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ bill.get('due_date') or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Reference</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ bill.get('reference') or '-' }}</p>
+                    </div>
+                </div>
+                {% if bill.get('notes') %}
+                <div class="mt-4 pt-4 border-t dark:border-gray-700">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Notes</p>
+                    <p class="text-gray-900 dark:text-white">{{ bill.get('notes') }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Items Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Items</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Product</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Qty</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Returned</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Net</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Price</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            {% for item in (bill.get('items') or []) %}
+                            {% if item is mapping %}
+                            <tr class="text-gray-700 dark:text-gray-300">
+                                <td class="px-4 py-3">{{ item.get('product_name', 'N/A') }}</td>
+                                <td class="px-4 py-3 text-right">{{ item.get('quantity', 0) }}</td>
+                                <td class="px-4 py-3 text-right {% if item.get('returned_quantity', 0) > 0 %}text-orange-600 font-medium{% endif %}">{{ item.get('returned_quantity', 0) }}</td>
+                                <td class="px-4 py-3 text-right font-medium">{{ item.get('quantity', 0) - item.get('returned_quantity', 0) }}</td>
+                                <td class="px-4 py-3 text-right">{{ item.get('price', 0) | currency }}</td>
+                                <td class="px-4 py-3 text-right">{{ item.get('total') or (item.get('quantity', 0) | to_float * item.get('price', 0) | to_float) | currency }}</td>
+                            </tr>
+                            {% endif %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No items</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Totals -->
+                <div class="flex justify-end mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div class="w-64 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">Sub Total:</span>
+                            <span class="text-gray-900 dark:text-white">{{ bill.get('sub_total', 0) | currency }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">VAT:</span>
+                            <span class="text-gray-900 dark:text-white">{{ bill.get('vat_amount', 0) | currency }}</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold border-t pt-2">
+                            <span class="text-gray-900 dark:text-white">Total:</span>
+                            <span class="text-gray-900 dark:text-white">{{ bill.get('total_amount', 0) | currency }}</span>
+                        </div>
+                        {% set returned_amount = bill.get('returned_amount', 0) %}
+                        {% if returned_amount > 0 %}
+                        <div class="flex justify-between text-sm text-orange-600 dark:text-orange-400">
+                            <span>Returned:</span>
+                            <span>-{{ returned_amount | currency }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between text-sm text-green-600 dark:text-green-400">
+                            <span>Paid:</span>
+                            <span>{{ bill.get('paid_amount', 0) | currency }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-medium text-red-600 dark:text-red-400">
+                            <span>Balance Due:</span>
+                            <span>{{ (bill.get('total_amount', 0) - bill.get('paid_amount', 0) - bill.get('returned_amount', 0)) | currency }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Panel -->
+        <div>
+            {% set balance = bill.get('total_amount', 0) - bill.get('paid_amount', 0) - bill.get('returned_amount', 0) %}
+            {% if balance > 0 %}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Record Payment</h3>
+                <form method="POST" action="{{ url_for('purchases.record_payment', bill_id=bill.get('id')) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Amount</label>
+                            <input type="number" name="amount" id="amount" step="0.01" min="0" max="{{ balance }}" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="payment_date" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Payment Date</label>
+                            <input type="date" name="payment_date" id="payment_date" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="payment_account_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Payment Account</label>
+                            <select name="payment_account_id" id="payment_account_id" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Account</option>
+                                {% for account in payment_accounts %}
+                                <option value="{{ account.id }}" data-bank-account-id="{{ account.bank_account_id or '' }}" data-type="{{ account.type }}">
+                                    {{ account.name }}{% if account.bank_name %} ({{ account.bank_name }}){% endif %} - {{ account.balance|currency }}
+                                </option>
+                                {% else %}
+                                <option value="">No payment accounts available</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="bank_account_id" id="bank_account_id" value="">
+                            <input type="hidden" name="account_type" id="account_type" value="">
+                        </div>
+                        <div>
+                            <label for="reference" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Reference</label>
+                            <input type="text" name="reference" id="reference"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-500 dark:hover:bg-primary-600">
+                            Record Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Create Debit Note Button -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mt-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Return Items</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Create a debit note for returned items from this bill.</p>
+                <a href="{{ url_for('purchases.create_debit_note', bill_id=bill.get('id')) }}" class="w-full inline-flex justify-center items-center text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-orange-500 dark:hover:bg-orange-600">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                    </svg>
+                    Create Debit Note
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentAccountSelect = document.getElementById('payment_account_id');
+    const bankAccountIdInput = document.getElementById('bank_account_id');
+    const accountTypeInput = document.getElementById('account_type');
+
+    if (paymentAccountSelect) {
+        paymentAccountSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                bankAccountIdInput.value = selectedOption.dataset.bankAccountId || '';
+                accountTypeInput.value = selectedOption.dataset.type || 'cash';
+            } else {
+                bankAccountIdInput.value = '';
+                accountTypeInput.value = '';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

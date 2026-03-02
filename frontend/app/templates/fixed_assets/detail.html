@@ -1,0 +1,341 @@
+{% extends "dashboard_layout.html" %}
+{% block page_title %}Fixed Asset Details{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-4">
+        <ol class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <li><a href="{{ url_for('fixed_assets.fixed_assets_list') }}" class="hover:text-primary-600 dark:hover:text-primary-400">Fixed Assets</a></li>
+            <li>/</li>
+            <li class="text-gray-900 dark:text-white">{{ asset.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Asset Information -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Asset Information</h3>
+                    <div class="flex gap-2">
+                        {% if asset.status == 'active' %}
+                        <button type="button" onclick="document.getElementById('depreciationModal').classList.remove('hidden')" 
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg dark:bg-primary-900 dark:text-primary-300 dark:hover:bg-primary-800">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h7a1 1 0 100-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3z"/>
+                            </svg>
+                            Record Depreciation
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('fixed_assets.edit_fixed_asset', asset_id=asset.id) }}" 
+                           class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-yellow-700 bg-yellow-100 hover:bg-yellow-200 rounded-lg dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                            </svg>
+                            Edit
+                        </a>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Asset Code</p>
+                                <p class="font-medium text-gray-900 dark:text-white font-mono">{{ asset.asset_code or '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Category</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ asset.category or '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Location</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ asset.location or '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                                {% set status_class = {
+                                    'active': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                                    'fully_depreciated': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+                                    'disposed': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+                                    'written_off': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                }.get(asset.status, 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300') %}
+                                <span class="px-2.5 py-0.5 rounded text-sm font-medium {{ status_class }}">
+                                    {{ (asset.status or 'unknown').replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Purchase Date</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ asset.purchase_date or '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Purchase Cost</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ (asset.purchase_cost or 0)|currency }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Vendor</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ asset.vendor_name or '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Depreciation Method</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ (asset.depreciation_method or 'straight_line').replace('_', ' ').title() }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% if asset.description %}
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Description</p>
+                        <p class="text-gray-900 dark:text-white">{{ asset.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Depreciation Summary -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Depreciation Summary</h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-4 gap-4 text-center">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Salvage Value</p>
+                            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (asset.salvage_value or 0)|currency }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Accumulated Depreciation</p>
+                            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (asset.accumulated_depreciation or 0)|currency }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Book Value</p>
+                            <p class="text-xl font-bold {{ 'text-red-600 dark:text-red-400' if asset.book_value <= asset.salvage_value else 'text-gray-900 dark:text-white' }}">
+                                {{ (asset.book_value or 0)|currency }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Annual Depreciation</p>
+                            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (asset.annual_depreciation or 0)|currency }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Depreciation History -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Depreciation History</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    {% if depreciation_history %}
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3 text-right">Amount</th>
+                                <th class="px-6 py-3">Method</th>
+                                <th class="px-6 py-3">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in depreciation_history %}
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                <td class="px-6 py-4">{{ record.depreciation_date }}</td>
+                                <td class="px-6 py-4 text-right font-medium">{{ (record.amount or 0)|currency }}</td>
+                                <td class="px-6 py-4">{{ (record.method or '-').replace('_', ' ').title() }}</td>
+                                <td class="px-6 py-4">{{ record.description or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="p-6 text-center text-gray-500 dark:text-gray-400">
+                        No depreciation records found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Additional Info -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Additional Information</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Useful Life</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.useful_life_years or 0 }} years</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Remaining Life</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.remaining_life or 0 }} years</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Warranty Expiry</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.warranty_expiry or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Insurance Policy</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.insurance_policy or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Linkage -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Account Linkage</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Asset Account</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.asset_account_name or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Acc. Depreciation Account</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.depreciation_account_name or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Depreciation Expense</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ asset.expense_account_name or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if asset.status == 'active' %}
+            <!-- Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Actions</h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    <button type="button" onclick="document.getElementById('disposeModal').classList.remove('hidden')"
+                            class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-yellow-700 bg-yellow-100 hover:bg-yellow-200 rounded-lg dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Dispose Asset
+                    </button>
+                    <button type="button" onclick="document.getElementById('writeOffModal').classList.remove('hidden')"
+                            class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                        Write Off Asset
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Depreciation Modal #}
+<div id="depreciationModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="document.getElementById('depreciationModal').classList.add('hidden')"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Record Depreciation</h3>
+            <form method="POST" action="{{ url_for('fixed_assets.record_depreciation', asset_id=asset.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Depreciation Date</label>
+                        <input type="date" name="depreciation_date" required
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                        <input type="number" step="0.01" name="amount" required value="{{ '%.2f'|format(asset.annual_depreciation or 0) }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Suggested: {{ (asset.annual_depreciation or 0)|currency }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <textarea name="description" rows="2"
+                                  class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="document.getElementById('depreciationModal').classList.add('hidden')"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg dark:bg-primary-600 dark:hover:bg-primary-700">Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Dispose Modal #}
+<div id="disposeModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="document.getElementById('disposeModal').classList.add('hidden')"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Dispose Asset</h3>
+            <form method="POST" action="{{ url_for('fixed_assets.dispose_asset', asset_id=asset.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Disposal Date</label>
+                        <input type="date" name="disposal_date" required
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Disposal Amount</label>
+                        <input type="number" step="0.01" name="disposal_amount" required value="0"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</label>
+                        <textarea name="disposal_reason" rows="2"
+                                  class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="document.getElementById('disposeModal').classList.add('hidden')"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg">Dispose</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Write Off Modal #}
+<div id="writeOffModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="document.getElementById('writeOffModal').classList.add('hidden')"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Write Off Asset</h3>
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <p class="text-red-700 dark:text-red-400 text-sm">This will write off the asset with a book value of <strong>{{ (asset.book_value or 0)|currency }}</strong>.</p>
+            </div>
+            <form method="POST" action="{{ url_for('fixed_assets.write_off_asset', asset_id=asset.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Write Off Date</label>
+                        <input type="date" name="write_off_date" required
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</label>
+                        <textarea name="reason" rows="2"
+                                  class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="document.getElementById('writeOffModal').classList.add('hidden')"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">Write Off</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

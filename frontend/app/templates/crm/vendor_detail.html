@@ -1,0 +1,211 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}{{ vendor.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ vendor.name }}</h2>
+            <p class="text-gray-500 dark:text-gray-400">{{ vendor.email or 'No email' }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{{ url_for('crm.edit_vendor', vendor_id=vendor.id) }}" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                </svg>
+                Edit
+            </a>
+            <a href="{{ url_for('crm.list_vendors') }}" class="inline-flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                </svg>
+                Back to Vendors
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Vendor Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                        <p class="text-gray-900 dark:text-white">{{ vendor.email or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                        <p class="text-gray-900 dark:text-white">{{ vendor.phone or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Tax ID</p>
+                        <p class="text-gray-900 dark:text-white">{{ vendor.tax_id or '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Payment Terms</p>
+                        <p class="text-gray-900 dark:text-white">{{ vendor.payment_terms or 30 }} days</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Address</p>
+                        <p class="text-gray-900 dark:text-white">{{ vendor.address or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Purchase History -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Purchase History</h3>
+                {% if bills and bills|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Bill #</th>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Paid</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Balance</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            {% for bill in bills %}
+                            <tr class="text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3">
+                                    <a href="{{ url_for('purchases.view_bill', bill_id=bill.id) }}" class="text-primary-600 dark:text-primary-400 hover:underline">
+                                        {{ bill.bill_number }}
+                                    </a>
+                                </td>
+                                <td class="px-4 py-3">{{ bill.bill_date }}</td>
+                                <td class="px-4 py-3 text-right">{{ bill.total_amount|currency }}</td>
+                                <td class="px-4 py-3 text-right text-green-600 dark:text-green-400">{{ bill.paid_amount|currency }}</td>
+                                <td class="px-4 py-3 text-right text-red-600 dark:text-red-400">{{ (bill.total_amount - bill.paid_amount - (bill.returned_amount or 0))|currency }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    {% set status = bill.status|lower %}
+                                    {% if status == 'paid' %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Paid</span>
+                                    {% elif status == 'partial' %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">Partial</span>
+                                    {% elif status == 'unpaid' %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Unpaid</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">{{ bill.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>No purchase history available</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Payment History -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment History</h3>
+                {% if payments and payments|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Reference</th>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Bill</th>
+                                <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            {% for payment in payments %}
+                            <tr class="text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3">{{ payment.payment_date[:10] if payment.payment_date else '-' }}</td>
+                                <td class="px-4 py-3">{{ payment.payment_number or '-' }}</td>
+                                <td class="px-4 py-3">
+                                    {% if payment.bill_number %}
+                                    <a href="{{ url_for('purchases.view_bill', bill_id=payment.bill_id) }}" class="text-primary-600 dark:text-primary-400 hover:underline">
+                                        {{ payment.bill_number }}
+                                    </a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {% set ptype = payment.type or '' %}
+                                    {% if ptype == 'advance_paid' %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{{ payment.payment_method }}</span>
+                                    {% elif ptype == 'advance_used' %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">{{ payment.payment_method }}</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">{{ payment.payment_method }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-right font-medium 
+                                    {% if ptype == 'advance_paid' %}text-blue-600 dark:text-blue-400
+                                    {% elif ptype == 'advance_used' %}text-purple-600 dark:text-purple-400
+                                    {% else %}text-red-600 dark:text-red-400{% endif %}">
+                                    {{ payment.amount|currency }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <td colspan="4" class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">Total Payments</td>
+                                <td class="px-4 py-3 text-right font-bold text-red-600 dark:text-red-400">{{ payments|sum(attribute='amount')|default(0)|float|currency }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>No payment history available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Balance Summary -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Balance Summary</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-500 dark:text-gray-400">Pre-paid Account Balance</span>
+                        <span class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ (vendor.account_balance or 0)|currency }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-500 dark:text-gray-400">Total Payable</span>
+                        <span class="text-xl font-bold text-red-600 dark:text-red-400">{{ (vendor.outstanding_balance or 0)|currency }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-500 dark:text-gray-400">Outstanding Bills</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ vendor.outstanding_bills or 0 }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{{ url_for('purchases.new_bill') }}" class="flex items-center px-4 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/30 transition">
+                        <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Create Bill
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

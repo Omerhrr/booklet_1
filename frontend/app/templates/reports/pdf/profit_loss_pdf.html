@@ -1,0 +1,83 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Profit & Loss Statement</div>
+<div class="report-period">Period: {{ report.start_date or 'N/A' }} to {{ report.end_date or 'N/A' }}</div>
+
+<!-- Revenue Section -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 13px; color: #059669; border-bottom: 1px solid #ccc; padding-bottom: 5px;">REVENUE</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Code</th>
+                <th style="width: 60%;">Account</th>
+                <th style="width: 25%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report.revenue %}
+            <tr>
+                <td>{{ item.account_code or '' }}</td>
+                <td>{{ item.account_name or '' }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.balance|float) if item.balance else "0.00" }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center" style="color: #888;">No revenue recorded</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td></td>
+                <td><strong>Total Revenue</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(report.total_revenue|float) if report.total_revenue else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Expenses Section -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 13px; color: #dc2626; border-bottom: 1px solid #ccc; padding-bottom: 5px;">EXPENSES</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Code</th>
+                <th style="width: 60%;">Account</th>
+                <th style="width: 25%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report.expenses %}
+            <tr>
+                <td>{{ item.account_code or '' }}</td>
+                <td>{{ item.account_name or '' }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.balance|float) if item.balance else "0.00" }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center" style="color: #888;">No expenses recorded</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td></td>
+                <td><strong>Total Expenses</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(report.total_expenses|float) if report.total_expenses else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Net Income Summary -->
+<div class="summary-box" style="margin-top: 20px; background-color: {% if report.net_income >= 0 %}#ecfdf5{% else %}#fef2f2{% endif %};">
+    <div class="summary-row">
+        <span class="summary-label" style="font-size: 13px; font-weight: bold;">Net Income (Profit / Loss):</span>
+        <span class="summary-value" style="font-size: 14px; color: {% if report.net_income >= 0 %}#059669{% else %}#dc2626{% endif %};">
+            {% if report.net_income >= 0 %}PROFIT{% else %}LOSS{% endif %}: 
+            {{ "%.2f"|format(report.net_income|float|abs) if report.net_income else "0.00" }}
+        </span>
+    </div>
+</div>
+{% endblock %}

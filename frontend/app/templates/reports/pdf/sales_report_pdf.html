@@ -1,0 +1,81 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Sales Report</div>
+<div class="report-period">Period: {{ start_date or 'All Time' }} {% if end_date %}to {{ end_date }}{% endif %}</div>
+
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">Total Sales:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_sales|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total Invoices:</span>
+        <span class="summary-value">{{ report.total_invoices|default(0) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Collected:</span>
+        <span class="summary-value amount-positive">{{ "%.2f"|format(report.collected|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Outstanding:</span>
+        <span class="summary-value amount-negative">{{ "%.2f"|format(report.outstanding|float) }}</span>
+    </div>
+</div>
+
+{% if report.top_customers %}
+<h3>Top Customers</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Customer</th>
+            <th class="text-right">Total Sales</th>
+            <th class="text-center">Invoices</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for customer in report.top_customers %}
+        <tr>
+            <td>{{ customer.name }}</td>
+            <td class="text-right">{{ "%.2f"|format(customer.total_sales|float) }}</td>
+            <td class="text-center">{{ customer.invoice_count }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if report.invoices %}
+<h3>Invoice Details</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th class="text-right">Amount</th>
+            <th class="text-center">Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for inv in report.invoices %}
+        <tr>
+            <td>{{ inv.invoice_number }}</td>
+            <td>{{ inv.invoice_date }}</td>
+            <td>{{ inv.customer_name or '-' }}</td>
+            <td class="text-right">{{ "%.2f"|format(inv.total_amount|float) }}</td>
+            <td class="text-center">
+                {% if inv.status == 'paid' %}
+                <span class="badge badge-success">Paid</span>
+                {% elif inv.status == 'partial' %}
+                <span class="badge badge-warning">Partial</span>
+                {% else %}
+                <span class="badge badge-danger">{{ inv.status|title }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

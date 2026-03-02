@@ -1,0 +1,74 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Expenses Report</div>
+<div class="report-period">Period: {{ start_date or 'All Time' }} {% if end_date %}to {{ end_date }}{% endif %}</div>
+
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">Total Expenses:</span>
+        <span class="summary-value amount-negative">{{ "%.2f"|format(report.total_expenses|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total VAT:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_vat|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Expense Count:</span>
+        <span class="summary-value">{{ report.expense_count|default(0) }}</span>
+    </div>
+</div>
+
+{% if report.by_category %}
+<h3>Expenses by Category</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th class="text-right">Total</th>
+            <th class="text-center">Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cat in report.by_category %}
+        <tr>
+            <td>{{ cat.category }}</td>
+            <td class="text-right">{{ "%.2f"|format(cat.total|float) }}</td>
+            <td class="text-center">{{ cat.count }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td>Total</td>
+            <td class="text-right">{{ "%.2f"|format(report.total_expenses|float) }}</td>
+            <td class="text-center">{{ report.expense_count|default(0) }}</td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+
+{% if report.expenses %}
+<h3>Expense Details</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Number</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th class="text-right">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for exp in report.expenses %}
+        <tr>
+            <td>{{ exp.expense_number }}</td>
+            <td>{{ exp.expense_date }}</td>
+            <td>{{ exp.category }}</td>
+            <td>{{ exp.description or '-' }}</td>
+            <td class="text-right">{{ "%.2f"|format(exp.amount|float) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Trial Balance</div>
+<div class="report-period">As of: {{ as_of_date or now.strftime('%Y-%m-%d') }}</div>
+
+{% if report.is_balanced is defined %}
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">Status:</span>
+        <span class="summary-value {% if report.is_balanced %}amount-positive{% else %}amount-negative{% endif %}">
+            {% if report.is_balanced %}Balanced{% else %}Not Balanced{% endif %}
+        </span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total Debit:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_debit|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total Credit:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_credit|float) }}</span>
+    </div>
+</div>
+{% endif %}
+
+{% if report.accounts %}
+<table>
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Account Name</th>
+            <th class="text-right">Debit</th>
+            <th class="text-right">Credit</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for acc in report.accounts %}
+        <tr>
+            <td>{{ acc.account_code or '-' }}</td>
+            <td>{{ acc.account_name }}</td>
+            <td class="text-right">
+                {% if acc.debit and acc.debit > 0 %}{{ "%.2f"|format(acc.debit|float) }}{% else %}-{% endif %}
+            </td>
+            <td class="text-right">
+                {% if acc.credit and acc.credit > 0 %}{{ "%.2f"|format(acc.credit|float) }}{% else %}-{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="2" class="text-right"><strong>Totals</strong></td>
+            <td class="text-right"><strong>{{ "%.2f"|format(report.total_debit|float) }}</strong></td>
+            <td class="text-right"><strong>{{ "%.2f"|format(report.total_credit|float) }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+{% else %}
+<p>No accounts found.</p>
+{% endif %}
+{% endblock %}

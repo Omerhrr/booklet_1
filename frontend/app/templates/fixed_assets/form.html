@@ -1,0 +1,209 @@
+{% extends "dashboard_layout.html" %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-4">
+        <ol class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <li><a href="{{ url_for('fixed_assets.fixed_assets_list') }}" class="hover:text-primary-600 dark:hover:text-primary-400">Fixed Assets</a></li>
+            <li>/</li>
+            <li class="text-gray-900 dark:text-white">{{ 'Edit' if asset else 'Add New' }}</li>
+        </ol>
+    </nav>
+
+    <form method="POST" id="assetForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Basic Information -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asset Name *</label>
+                        <input type="text" name="name" required value="{{ asset.name if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asset Code</label>
+                        <input type="text" name="asset_code" placeholder="Auto-generated if empty" value="{{ asset.asset_code if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                        <select name="category" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Category</option>
+                            <option value="Equipment" {% if asset and asset.category == 'Equipment' %}selected{% endif %}>Equipment</option>
+                            <option value="Vehicle" {% if asset and asset.category == 'Vehicle' %}selected{% endif %}>Vehicle</option>
+                            <option value="Furniture" {% if asset and asset.category == 'Furniture' %}selected{% endif %}>Furniture</option>
+                            <option value="Building" {% if asset and asset.category == 'Building' %}selected{% endif %}>Building</option>
+                            <option value="Computer" {% if asset and asset.category == 'Computer' %}selected{% endif %}>Computer</option>
+                            <option value="Machinery" {% if asset and asset.category == 'Machinery' %}selected{% endif %}>Machinery</option>
+                            <option value="Land" {% if asset and asset.category == 'Land' %}selected{% endif %}>Land</option>
+                            <option value="Other" {% if asset and asset.category == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                        <input type="text" name="location" placeholder="Physical location" value="{{ asset.location if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Date *</label>
+                        <input type="date" name="purchase_date" required value="{{ asset.purchase_date if asset else today }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Cost *</label>
+                        <input type="number" step="0.01" name="purchase_cost" required value="{{ asset.purchase_cost if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vendor</label>
+                        <select name="vendor_id" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Vendor</option>
+                            {% for vendor in vendors %}
+                            <option value="{{ vendor.id }}" {% if asset and asset.vendor_id == vendor.id %}selected{% endif %}>{{ vendor.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <textarea name="description" rows="2"
+                                  class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">{{ asset.description if asset else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Depreciation Settings -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Depreciation Settings</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Depreciation Method</label>
+                        <select name="depreciation_method" id="depreciation_method" required
+                                class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="straight_line" {% if asset and asset.depreciation_method == 'straight_line' %}selected{% endif %}>Straight Line</option>
+                            <option value="declining_balance" {% if asset and asset.depreciation_method == 'declining_balance' %}selected{% endif %}>Declining Balance</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Useful Life (Years) *</label>
+                        <input type="number" name="useful_life_years" required min="1" max="100" value="{{ asset.useful_life_years if asset else 5 }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salvage Value</label>
+                        <input type="number" step="0.01" name="salvage_value" value="{{ asset.salvage_value if asset else 0 }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div id="rateField" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Depreciation Rate (%)</label>
+                        <input type="number" step="0.01" name="depreciation_rate" placeholder="For declining balance" value="{{ asset.depreciation_rate if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Additional Information</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Warranty Expiry</label>
+                        <input type="date" name="warranty_expiry" value="{{ asset.warranty_expiry if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Insurance Policy</label>
+                        <input type="text" name="insurance_policy" value="{{ asset.insurance_policy if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Insurance Expiry</label>
+                        <input type="date" name="insurance_expiry" value="{{ asset.insurance_expiry if asset else '' }}"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Settings -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Account Settings (Optional)</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asset Account</label>
+                        <select name="asset_account_id" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Account</option>
+                            {% for account in asset_accounts %}
+                            <option value="{{ account.id }}" {% if asset and asset.asset_account_id == account.id %}selected{% endif %}>{{ account.code }} - {{ account.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accumulated Depreciation Account</label>
+                        <select name="depreciation_account_id" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Account</option>
+                            {% for account in asset_accounts %}
+                            <option value="{{ account.id }}" {% if asset and asset.depreciation_account_id == account.id %}selected{% endif %}>{{ account.code }} - {{ account.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Depreciation Expense Account</label>
+                        <select name="expense_account_id" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Account</option>
+                            {% for account in expense_accounts %}
+                            <option value="{{ account.id }}" {% if asset and asset.expense_account_id == account.id %}selected{% endif %}>{{ account.code }} - {{ account.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-3">
+            <a href="{{ url_for('fixed_assets.fixed_assets_list') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</a>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg dark:bg-primary-600 dark:hover:bg-primary-700">Save Asset</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var methodSelect = document.getElementById('depreciation_method');
+    var rateField = document.getElementById('rateField');
+    
+    function toggleRateField() {
+        if (methodSelect.value === 'declining_balance') {
+            rateField.style.display = 'block';
+        } else {
+            rateField.style.display = 'none';
+        }
+    }
+    
+    if (methodSelect && rateField) {
+        toggleRateField();
+        methodSelect.addEventListener('change', toggleRateField);
+    }
+});
+</script>
+{% endblock %}
