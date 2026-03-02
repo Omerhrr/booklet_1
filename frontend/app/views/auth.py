@@ -49,6 +49,11 @@ def login():
                 session['selected_branch_name'] = default_branch.get('name')
                 session['branch_currency'] = default_branch.get('currency', '$')
         
+        # Fetch business settings for business name
+        business_settings, _ = api_request('GET', '/settings/business')
+        if business_settings:
+            session['business_name'] = business_settings.get('name', 'Company')
+        
         # Handle HTMX request
         if request.headers.get('HX-Request'):
             response_obj = jsonify({'success': True})
