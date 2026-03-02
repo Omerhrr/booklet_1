@@ -232,22 +232,47 @@ class CashBookService:
                            account_type: str, branch_id: int,
                            start_date: date = None, end_date: date = None) -> Dict:
         """Get summary for a specific account"""
-        # Get opening balance
+        # Get opening balance - includes:
+        # 1. Opening balance entries (source_type='opening_balance') - always included
+        # 2. Transactions before start_date (if start_date provided)
         opening_balance = Decimal("0")
+        
+        # First, get the opening balance entry amount (these are always part of opening balance)
+        opening_entry_query = self.db.query(
+            func.sum(CashBookEntry.amount)
+        ).filter(
+            CashBookEntry.account_id == account_id,
+            CashBookEntry.source_type == 'opening_balance'
+        )
+        if branch_id:
+            opening_entry_query = opening_entry_query.filter(CashBookEntry.branch_id == branch_id)
+        opening_balance = opening_entry_query.scalar() or Decimal("0")
+        
+        # If start_date is provided, also include transactions before that date
         if start_date:
-            query = self.db.query(
-                func.sum(LedgerEntry.debit - LedgerEntry.credit)
-            ).filter(
-                LedgerEntry.account_id == account_id,
-                LedgerEntry.transaction_date < start_date
+            # Get transactions before start_date (excluding opening balance entries already counted)
+            pre_period_query = self.db.query(CashBookEntry).filter(
+                CashBookEntry.account_id == account_id,
+                CashBookEntry.entry_date < start_date,
+                CashBookEntry.source_type != 'opening_balance'  # Don't double count
             )
             if branch_id:
-                query = query.filter(LedgerEntry.branch_id == branch_id)
-            opening_balance = query.scalar() or Decimal("0")
+                pre_period_query = pre_period_query.filter(CashBookEntry.branch_id == branch_id)
+            
+            pre_period_entries = pre_period_query.all()
+            
+            # Calculate net movement before start_date
+            pre_receipts = sum(e.amount for e in pre_period_entries if e.entry_type == "receipt" or 
+                               (e.entry_type == "transfer" and e.transfer_direction == "in"))
+            pre_payments = sum(e.amount for e in pre_period_entries if e.entry_type == "payment" or 
+                               (e.entry_type == "transfer" and e.transfer_direction == "out"))
+            
+            opening_balance = opening_balance + pre_receipts - pre_payments
         
-        # Get entries for the period
+        # Get entries for the period (excluding opening balance entries if they fall in the period)
         query = self.db.query(CashBookEntry).filter(
-            CashBookEntry.account_id == account_id
+            CashBookEntry.account_id == account_id,
+            CashBookEntry.source_type != 'opening_balance'  # Opening balance is shown separately
         )
         if branch_id:
             query = query.filter(CashBookEntry.branch_id == branch_id)
