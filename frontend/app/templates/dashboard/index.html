@@ -14,55 +14,75 @@
     {%- endif -%}
 {%- endmacro %}
 
+{% macro format_growth(value) -%}
+    {%- if value > 0 -%}
+        <span class="text-green-600 dark:text-green-400">+{{ value|round(1) }}%</span>
+    {%- elif value < 0 -%}
+        <span class="text-red-600 dark:text-red-400">{{ value|round(1) }}%</span>
+    {%- else -%}
+        <span class="text-gray-500 dark:text-gray-400">0%</span>
+    {%- endif -%}
+{%- endmacro %}
+
 {% block content %}
-<!-- Stats Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+<!-- Stats Cards Row 1 -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
     <!-- Total Sales -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
-        <div class="flex items-center gap-2 mb-3">
-            <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
-                </svg>
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Total Sales</p>
             </div>
-            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Total Sales</p>
+            <span class="text-xs px-2 py-1 rounded-full {{ 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' if (dashboard.stats.sales_growth if dashboard.stats else 0) >= 0 else 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' }}">
+                {{ format_growth(dashboard.stats.sales_growth if dashboard.stats else 0) }}
+            </span>
         </div>
         <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
             {{ (dashboard.stats.total_sales if dashboard.stats else 0)|currency }}
         </p>
-        <p class="text-xs md:text-sm text-green-600 dark:text-green-400 mt-2">+12% from last month</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ dashboard.stats.invoices_count if dashboard.stats else 0 }} invoices this month</p>
     </div>
     
     <!-- Total Purchases -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
-        <div class="flex items-center gap-2 mb-3">
-            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z"/>
-                </svg>
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z"/>
+                    </svg>
+                </div>
+                <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Total Purchases</p>
             </div>
-            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Total Purchases</p>
+            <span class="text-xs px-2 py-1 rounded-full {{ 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' if (dashboard.stats.purchases_growth if dashboard.stats else 0) >= 0 else 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' }}">
+                {{ format_growth(dashboard.stats.purchases_growth if dashboard.stats else 0) }}
+            </span>
         </div>
         <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
             {{ (dashboard.stats.total_purchases if dashboard.stats else 0)|currency }}
         </p>
-        <p class="text-xs md:text-sm text-blue-600 dark:text-blue-400 mt-2">+8% from last month</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ dashboard.stats.bills_count if dashboard.stats else 0 }} bills this month</p>
     </div>
     
-    <!-- Accounts Receivable -->
+    <!-- Gross Profit -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
         <div class="flex items-center gap-2 mb-3">
-            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+            <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                 </svg>
             </div>
-            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Accounts Receivable</p>
+            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Gross Profit</p>
         </div>
-        <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
-            {{ (dashboard.stats.total_receivables if dashboard.stats else 0)|currency }}
+        <p class="text-xl md:text-2xl font-bold {{ 'text-emerald-600 dark:text-emerald-400' if (dashboard.stats.gross_profit if dashboard.stats else 0) >= 0 else 'text-red-600 dark:text-red-400' }}">
+            {{ (dashboard.stats.gross_profit if dashboard.stats else 0)|currency }}
         </p>
-        <p class="text-xs md:text-sm text-yellow-600 dark:text-yellow-400 mt-2">{{ dashboard.stats.total_customers if dashboard.stats else 0 }} customers</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ (dashboard.stats.gross_profit_margin if dashboard.stats else 0)|round(1) }}% margin</p>
     </div>
     
     <!-- Cash Balance -->
@@ -79,88 +99,291 @@
         <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
             {{ (dashboard.stats.cash_balance if dashboard.stats else 0)|currency }}
         </p>
-        <p class="text-xs md:text-sm text-purple-600 dark:text-purple-400 mt-2">Available funds</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Available funds</p>
     </div>
 </div>
 
-<!-- Charts Row -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <!-- Sales Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sales Overview</h3>
-        <div id="salesChart" style="height: 300px;"></div>
-    </div>
-    
-    <!-- Expense Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Expenses Overview</h3>
-        <div id="expenseChart" style="height: 300px;"></div>
-    </div>
-</div>
-
-<!-- Quick Actions & Recent Activity -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Quick Actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-        <div class="space-y-3">
-            <a href="{{ url_for('sales.new_invoice') }}" class="flex items-center p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 transition">
-                <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <span class="ml-3 font-medium text-gray-700 dark:text-gray-300">New Sales Invoice</span>
-            </a>
-            
-            <a href="{{ url_for('purchases.new_bill') }}" class="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition">
-                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <span class="ml-3 font-medium text-gray-700 dark:text-gray-300">New Purchase Bill</span>
-            </a>
-            
-            <a href="{{ url_for('inventory.list_products') }}" class="flex items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/40 transition">
-                <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
-                    </svg>
-                </div>
-                <span class="ml-3 font-medium text-gray-700 dark:text-gray-300">Manage Inventory</span>
-            </a>
-        </div>
-    </div>
-    
-    <!-- Low Stock Alert -->
+<!-- Stats Cards Row 2 -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+    <!-- Total Expenses -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
-        <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-4">Low Stock Alert</h3>
-        <div class="text-center py-4 md:py-8">
-            <div class="w-12 h-12 md:w-16 md:h-16 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
-                <svg class="w-6 h-6 md:w-8 md:h-8 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full {{ 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' if (dashboard.stats.expenses_growth if dashboard.stats else 0) > 0 else 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' }}">
+                {{ format_growth(dashboard.stats.expenses_growth if dashboard.stats else 0) }}
+            </span>
+        </div>
+        <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
+            {{ (dashboard.stats.total_expenses if dashboard.stats else 0)|currency }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+    </div>
+    
+    <!-- Net Profit -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                 </svg>
             </div>
-            <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white break-words">{{ dashboard.stats.low_stock_products if dashboard.stats else 0 }}</p>
-            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Products below reorder level</p>
+            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Net Profit</p>
         </div>
+        <p class="text-xl md:text-2xl font-bold {{ 'text-indigo-600 dark:text-indigo-400' if (dashboard.stats.net_profit if dashboard.stats else 0) >= 0 else 'text-red-600 dark:text-red-400' }}">
+            {{ (dashboard.stats.net_profit if dashboard.stats else 0)|currency }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ (dashboard.stats.net_profit_margin if dashboard.stats else 0)|round(1) }}% margin</p>
+    </div>
+    
+    <!-- Accounts Receivable -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Accounts Receivable</p>
+        </div>
+        <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
+            {{ (dashboard.stats.total_receivables if dashboard.stats else 0)|currency }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ dashboard.stats.total_customers if dashboard.stats else 0 }} customers
+            {% if dashboard.stats.overdue_invoices if dashboard.stats else 0 > 0 %}
+            <span class="text-red-500">({{ dashboard.stats.overdue_invoices }} overdue)</span>
+            {% endif %}
+        </p>
     </div>
     
     <!-- Accounts Payable -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700">
-        <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-4">Accounts Payable</h3>
-        <div class="text-center py-4 md:py-8">
-            <div class="w-12 h-12 md:w-16 md:h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
-                <svg class="w-6 h-6 md:w-8 md:h-8 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                 </svg>
             </div>
-            <p class="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white break-words" title="{{ (dashboard.stats.total_payables if dashboard.stats else 0)|currency }}">
-                {{ (dashboard.stats.total_payables if dashboard.stats else 0)|currency }}
-            </p>
-            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Total outstanding bills</p>
+            <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Accounts Payable</p>
         </div>
+        <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">
+            {{ (dashboard.stats.total_payables if dashboard.stats else 0)|currency }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ dashboard.stats.total_vendors if dashboard.stats else 0 }} vendors</p>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Sales Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Sales Overview</h3>
+            <select id="salesChartPeriod" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+            </select>
+        </div>
+        <div id="salesChart" style="height: 280px;"></div>
+    </div>
+    
+    <!-- Expense Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Expenses Overview</h3>
+            <select id="expenseChartPeriod" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+            </select>
+        </div>
+        <div id="expenseChart" style="height: 280px;"></div>
+    </div>
+</div>
+
+<!-- Additional Metrics Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Top Products -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Selling Products</h3>
+        <div class="space-y-3" id="topProducts">
+            {% if dashboard.top_products and dashboard.top_products|length > 0 %}
+                {% for product in dashboard.top_products %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ product.name }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ product.sku or 'N/A' }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ product.revenue|currency }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ product.quantity }} sold</p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                    </svg>
+                    <p class="text-sm">No sales data yet</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Top Customers -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Customers</h3>
+        <div class="space-y-3" id="topCustomers">
+            {% if dashboard.top_customers and dashboard.top_customers|length > 0 %}
+                {% for customer in dashboard.top_customers %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ customer.name }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ customer.invoice_count }} invoices</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ customer.total_purchases|currency }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                    </svg>
+                    <p class="text-sm">No customer data yet</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions & Stats -->
+    <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+            <div class="space-y-2">
+                <a href="{{ url_for('sales.new_invoice') }}" class="flex items-center p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 transition">
+                    <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <span class="ml-3 font-medium text-gray-700 dark:text-gray-300 text-sm">New Sales Invoice</span>
+                </a>
+                
+                <a href="{{ url_for('purchases.new_bill') }}" class="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <span class="ml-3 font-medium text-gray-700 dark:text-gray-300 text-sm">New Purchase Bill</span>
+                </a>
+                
+                <a href="{{ url_for('inventory.list_products') }}" class="flex items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/40 transition">
+                    <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                        </svg>
+                    </div>
+                    <span class="ml-3 font-medium text-gray-700 dark:text-gray-300 text-sm">Manage Inventory</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">At a Glance</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard.stats.total_products if dashboard.stats else 0 }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Products</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard.stats.total_employees if dashboard.stats else 0 }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Employees</p>
+                </div>
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ dashboard.stats.low_stock_products if dashboard.stats else 0 }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Low Stock</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard.stats.total_other_income if dashboard.stats else 0|currency }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Other Income</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Transactions</h3>
+        <a href="#" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">View All</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th class="pb-3">Type</th>
+                    <th class="pb-3">Number</th>
+                    <th class="pb-3">Party</th>
+                    <th class="pb-3">Date</th>
+                    <th class="pb-3 text-right">Amount</th>
+                    <th class="pb-3 text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="recentTransactions">
+                {% if dashboard.recent_transactions and dashboard.recent_transactions|length > 0 %}
+                    {% for tx in dashboard.recent_transactions %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if tx.type == 'sales_invoice' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                {% elif tx.type == 'purchase_bill' %}bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300
+                                {% else %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300{% endif %}">
+                                {{ tx.type.replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-sm text-gray-900 dark:text-white font-medium">{{ tx.number }}</td>
+                        <td class="py-3 text-sm text-gray-600 dark:text-gray-400">{{ tx.party }}</td>
+                        <td class="py-3 text-sm text-gray-600 dark:text-gray-400">{{ tx.date }}</td>
+                        <td class="py-3 text-sm text-gray-900 dark:text-white font-medium text-right">{{ tx.amount|currency }}</td>
+                        <td class="py-3 text-right">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if tx.status in ['paid', 'Paid'] %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                {% elif tx.status in ['partial', 'Partial', 'partially_paid'] %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300
+                                {% elif tx.status in ['overdue', 'Overdue'] %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300
+                                {% else %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ tx.status.title() if tx.status else 'Pending' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-gray-500 dark:text-gray-400">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                                <path fill-rule="evenodd" d="M2 8v6a2 2 0 002 2h12a2 2 0 002-2V8H2zm2 2a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                            </svg>
+                            No recent transactions
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
@@ -168,41 +391,88 @@
 {% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Sales Chart
+        // Sales Chart - uses real data from backend
         const salesChart = echarts.init(document.getElementById('salesChart'));
+        const salesData = {{ dashboard.sales_chart | tojson | safe if dashboard.sales_chart else '{"labels": [], "values": []}' }};
+        
         const salesOption = {
-            tooltip: { trigger: 'axis' },
-            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            tooltip: { 
+                trigger: 'axis',
+                formatter: function(params) {
+                    const date = params[0].axisValue;
+                    const value = params[0].value;
+                    return `${date}<br/><strong>${formatCurrency(value)}</strong>`;
+                }
+            },
+            grid: { left: '3%', right: '4%', bottom: '3%', top: '3%', containLabel: true },
             xAxis: {
                 type: 'category',
-                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                axisLine: { lineStyle: { color: '#8b5cf6' } }
+                data: salesData.labels || [],
+                axisLine: { lineStyle: { color: '#8b5cf6' } },
+                axisLabel: {
+                    formatter: function(value) {
+                        // Show fewer labels for better readability
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                    }
+                }
             },
-            yAxis: { type: 'value' },
+            yAxis: { 
+                type: 'value',
+                axisLabel: {
+                    formatter: function(value) {
+                        return formatCompact(value);
+                    }
+                }
+            },
             series: [{
-                data: [1200, 2000, 1500, 800, 1700, 2800, 2100],
+                data: salesData.values || [],
                 type: 'line',
                 smooth: true,
                 areaStyle: { color: 'rgba(139, 92, 246, 0.2)' },
-                lineStyle: { color: '#8b5cf6' },
-                itemStyle: { color: '#8b5cf6' }
+                lineStyle: { color: '#8b5cf6', width: 2 },
+                itemStyle: { color: '#8b5cf6' },
+                symbol: 'circle',
+                symbolSize: 6
             }]
         };
         salesChart.setOption(salesOption);
         
-        // Expense Chart
+        // Expense Chart - uses real data from backend
         const expenseChart = echarts.init(document.getElementById('expenseChart'));
+        const expenseData = {{ dashboard.expense_chart | tojson | safe if dashboard.expense_chart else '{"labels": [], "values": []}' }};
+        
         const expenseOption = {
-            tooltip: { trigger: 'axis' },
-            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            tooltip: { 
+                trigger: 'axis',
+                formatter: function(params) {
+                    const date = params[0].axisValue;
+                    const value = params[0].value;
+                    return `${date}<br/><strong>${formatCurrency(value)}</strong>`;
+                }
+            },
+            grid: { left: '3%', right: '4%', bottom: '3%', top: '3%', containLabel: true },
             xAxis: {
                 type: 'category',
-                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                axisLine: { lineStyle: { color: '#f59e0b' } }
+                data: expenseData.labels || [],
+                axisLine: { lineStyle: { color: '#f59e0b' } },
+                axisLabel: {
+                    formatter: function(value) {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                    }
+                }
             },
-            yAxis: { type: 'value' },
+            yAxis: { 
+                type: 'value',
+                axisLabel: {
+                    formatter: function(value) {
+                        return formatCompact(value);
+                    }
+                }
+            },
             series: [{
-                data: [800, 1200, 900, 1500, 1100, 600, 1400],
+                data: expenseData.values || [],
                 type: 'bar',
                 itemStyle: { 
                     color: '#f59e0b',
@@ -212,10 +482,51 @@
         };
         expenseChart.setOption(expenseOption);
         
+        // Helper functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(value || 0);
+        }
+        
+        function formatCompact(value) {
+            if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+            if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+            return value;
+        }
+        
         // Resize charts on window resize
         window.addEventListener('resize', function() {
             salesChart.resize();
             expenseChart.resize();
+        });
+        
+        // Period selector handlers
+        document.getElementById('salesChartPeriod').addEventListener('change', function() {
+            const days = this.value;
+            fetch(`/dashboard/charts/sales?days=${days}`)
+                .then(response => response.json())
+                .then(data => {
+                    salesChart.setOption({
+                        xAxis: { data: data.labels },
+                        series: [{ data: data.values }]
+                    });
+                });
+        });
+        
+        document.getElementById('expenseChartPeriod').addEventListener('change', function() {
+            const days = this.value;
+            fetch(`/dashboard/charts/expenses?days=${days}`)
+                .then(response => response.json())
+                .then(data => {
+                    expenseChart.setOption({
+                        xAxis: { data: data.labels },
+                        series: [{ data: data.values }]
+                    });
+                });
         });
     });
 </script>
