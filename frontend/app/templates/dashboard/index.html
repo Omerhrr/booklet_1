@@ -157,7 +157,7 @@
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {{ dashboard.stats.total_customers if dashboard.stats else 0 }} customers
-            {% if dashboard.stats.overdue_invoices if dashboard.stats else 0 > 0 %}
+            {% if dashboard.stats and dashboard.stats.overdue_invoices and dashboard.stats.overdue_invoices > 0 %}
             <span class="text-red-500">({{ dashboard.stats.overdue_invoices }} overdue)</span>
             {% endif %}
         </p>
