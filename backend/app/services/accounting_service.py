@@ -394,16 +394,32 @@ class ReportService:
             return query.first()
         
         # Helper to get balance by account patterns
-        def get_balance_by_patterns(patterns: list, account_type: str = None) -> Decimal:
-            """Get balance by finding account with matching name patterns"""
+        def get_balance_by_patterns(patterns: list, account_type: str = None, is_credit_balance: bool = False) -> Decimal:
+            """Get balance by finding account with matching name patterns
+            
+            Args:
+                patterns: List of name patterns to match
+                account_type: Filter by account type (asset, liability, equity, etc.)
+                is_credit_balance: If True, calculate as credit - debit (for liability/equity accounts)
+            """
             from sqlalchemy import or_
             
-            query = self.db.query(
-                func.sum(LedgerEntry.debit - LedgerEntry.credit)
-            ).join(Account).filter(
-                Account.business_id == business_id,
-                Account.is_active == True
-            )
+            if is_credit_balance:
+                # For liabilities and equity: credit - debit (normal balance is credit)
+                query = self.db.query(
+                    func.sum(LedgerEntry.credit - LedgerEntry.debit)
+                ).join(Account).filter(
+                    Account.business_id == business_id,
+                    Account.is_active == True
+                )
+            else:
+                # For assets and expenses: debit - credit (normal balance is debit)
+                query = self.db.query(
+                    func.sum(LedgerEntry.debit - LedgerEntry.credit)
+                ).join(Account).filter(
+                    Account.business_id == business_id,
+                    Account.is_active == True
+                )
             
             pattern_filters = [Account.name.ilike(f"%{p}%") for p in patterns]
             query = query.filter(or_(*pattern_filters))
@@ -440,14 +456,15 @@ class ReportService:
             'asset'
         )
         
-        # Accumulated Depreciation
+        # Accumulated Depreciation (contra-asset, has credit balance)
         accumulated_depreciation = get_balance_by_patterns(
             ['accumulated depreciation', 'depreciation'],
-            'asset'
+            'asset',
+            is_credit_balance=True  # Contra-assets have credit balance (returns positive value)
         )
         
-        # Net Book Value
-        net_book_value = fixed_assets_cost + accumulated_depreciation  # depreciation is negative (contra-asset)
+        # Net Book Value = Cost - Accumulated Depreciation
+        net_book_value = fixed_assets_cost - accumulated_depreciation
         
         # Other Non-Current Assets (intangible, long-term investments, etc.)
         other_non_current = get_balance_by_patterns(
@@ -500,83 +517,108 @@ class ReportService:
         total_assets = total_non_current_assets + total_current_assets
         
         # ========== LIABILITIES ==========
-        # Accounts Payable
+        # Accounts Payable (credit balance)
         accounts_payable = get_balance_by_patterns(
             ['accounts payable', 'payable', 'creditor', 'trade payable', 'a/p'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
-        # Payroll Liabilities
+        # Payroll Liabilities (credit balance)
         payroll_liabilities = get_balance_by_patterns(
             ['payroll liability', 'salary payable', 'wages payable', 'payroll'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
-        # PAYE Payable
+        # PAYE Payable (credit balance)
         paye_payable = get_balance_by_patterns(
             ['paye', 'pay as you earn', 'income tax payable'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
-        # Pension Payable
+        # Pension Payable (credit balance)
         pension_payable = get_balance_by_patterns(
             ['pension', 'provident fund', 'retirement'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
-        # VAT Payable (Output VAT)
+        # VAT Payable (Output VAT) (credit balance)
         vat_payable = get_balance_by_patterns(
             ['vat payable', 'output vat', 'vat output', 'vat liability'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
-        # Customer Advances (deferred revenue)
+        # Customer Advances (deferred revenue) (credit balance)
         customer_advances = get_balance_by_patterns(
             ['customer advance', 'deferred revenue', 'unearned revenue', 'deposit received'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
-        # Other Liabilities
+        # Other Liabilities (credit balance)
         other_liabilities = get_balance_by_patterns(
             ['accrued expense', 'other liability', 'loan payable', 'note payable'],
-            'liability'
+            'liability',
+            is_credit_balance=True
         )
         
         total_liabilities = accounts_payable + payroll_liabilities + paye_payable + pension_payable + vat_payable + customer_advances + other_liabilities
         
         # ========== EQUITY ==========
-        # Owner's Equity / Capital
+        # Owner's Equity / Capital (credit balance)
         owners_equity = get_balance_by_patterns(
             ["owner's equity", 'owner equity', 'capital', 'owner capital', 'member capital'],
-            'equity'
+            'equity',
+            is_credit_balance=True
         )
         
-        # Retained Earnings
+        # Retained Earnings (credit balance)
         retained_earnings = get_balance_by_patterns(
             ['retained earnings', 'retained earning'],
-            'equity'
+            'equity',
+            is_credit_balance=True
         )
         
-        # Opening Balance Equity
+        # Opening Balance Equity (credit balance)
         opening_balance_equity = get_balance_by_patterns(
             ['opening balance equity'],
-            'equity'
+            'equity',
+            is_credit_balance=True
         )
         
         # Current Period Earnings (Net Income)
         current_period_earnings = Decimal("0")
         
         # Calculate net income for current period
+        # Revenue has credit balance, Expenses have debit balance
         revenue_balance = Decimal("0")
         expense_balance = Decimal("0")
         
         for account in get_accounts_by_type('revenue'):
-            balance = get_account_balance(account.id)
-            revenue_balance += balance
+            # Revenue has credit balance: credit - debit
+            query = self.db.query(
+                func.sum(LedgerEntry.credit - LedgerEntry.debit)
+            ).filter(LedgerEntry.account_id == account.id)
+            if branch_id:
+                query = query.filter(LedgerEntry.branch_id == branch_id)
+            if as_of_date:
+                query = query.filter(LedgerEntry.transaction_date <= as_of_date)
+            revenue_balance += query.scalar() or Decimal("0")
         
         for account in get_accounts_by_type('expense'):
-            balance = get_account_balance(account.id)
-            expense_balance += balance
+            # Expenses have debit balance: debit - credit
+            query = self.db.query(
+                func.sum(LedgerEntry.debit - LedgerEntry.credit)
+            ).filter(LedgerEntry.account_id == account.id)
+            if branch_id:
+                query = query.filter(LedgerEntry.branch_id == branch_id)
+            if as_of_date:
+                query = query.filter(LedgerEntry.transaction_date <= as_of_date)
+            expense_balance += query.scalar() or Decimal("0")
         
         current_period_earnings = revenue_balance - expense_balance
         
