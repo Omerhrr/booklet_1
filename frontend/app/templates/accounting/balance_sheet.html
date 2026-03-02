@@ -47,7 +47,7 @@
         <div class="text-center mb-8 border-b pb-6 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ session.get('business_name', 'Company') }}</h2>
             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mt-1">Statement of Financial Position</h3>
-            <p class="text-gray-500 dark:text-gray-400">As of {{ as_of_date|date_format if as_of_date else '' }}</p>
+            <p class="text-gray-500 dark:text-gray-400">As of {{ as_of_date if as_of_date else '' }}</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
