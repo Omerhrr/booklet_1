@@ -4,12 +4,25 @@
 <div class="p-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Balance Sheet</h1>
-            <p class="text-gray-500 dark:text-gray-400">Financial position report</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Statement of Financial Position</h1>
+            <p class="text-gray-500 dark:text-gray-400">A snapshot of your company's assets, liabilities, and equity on a specific date</p>
         </div>
-        <button onclick="window.print()" class="text-gray-900 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-            Print
-        </button>
+        <div class="flex gap-2">
+            <a href="{{ url_for('accounting.balance_sheet_pdf', as_of_date=as_of_date) }}" target="_blank"
+               class="text-gray-900 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"/>
+                </svg>
+                PDF
+            </a>
+            <a href="{{ url_for('accounting.balance_sheet_excel', as_of_date=as_of_date) }}"
+               class="text-gray-900 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"/>
+                </svg>
+                Excel
+            </a>
+        </div>
     </div>
 
     <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6 mb-6">
@@ -20,7 +33,7 @@
                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
             </div>
             <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                Generate
+                Generate Report
             </button>
             <a href="{{ url_for('accounting.balance_sheet') }}" class="text-gray-900 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
                 Clear
@@ -29,103 +42,200 @@
     </div>
 
     {% if as_of_date %}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Assets -->
-        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Assets</h3>
-            <div class="space-y-3">
-                {% for item in report.assets %}
-                <div class="flex justify-between py-2 border-b dark:border-gray-700">
-                    <span class="text-gray-600 dark:text-gray-400">
-                        {{ item.account_code }} - {{ item.account_name }}
-                    </span>
-                    <span class="font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(item.balance) }}</span>
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-8">
+        <!-- Header -->
+        <div class="text-center mb-8 border-b pb-6 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ session.get('business_name', 'Company') }}</h2>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mt-1">Statement of Financial Position</h3>
+            <p class="text-gray-500 dark:text-gray-400">As of {{ as_of_date|date_format if as_of_date else '' }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- ASSETS COLUMN -->
+            <div>
+                <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-4 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">ASSETS</h4>
+                
+                <!-- Non-Current Assets -->
+                <div class="mb-6">
+                    <h5 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">Non-Current Assets</h5>
+                    <div class="space-y-2">
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Fixed Assets (Cost)</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.non_current_assets.fixed_assets_cost|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 pl-4">
+                            <span class="text-gray-600 dark:text-gray-400">Less: Accumulated Depreciation</span>
+                            <span class="text-red-600 dark:text-red-400">({{ report.non_current_assets.accumulated_depreciation|abs|currency }})</span>
+                        </div>
+                        <div class="flex justify-between py-1 font-medium border-t dark:border-gray-700">
+                            <span class="text-gray-700 dark:text-gray-300">Net Book Value</span>
+                            <span class="text-gray-900 dark:text-white">{{ report.non_current_assets.net_book_value|currency }}</span>
+                        </div>
+                        {% if report.non_current_assets.other_non_current != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Other Non-Current Assets</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.non_current_assets.other_non_current|currency }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between py-2 mt-2 bg-gray-50 dark:bg-gray-700/50 px-2 rounded font-medium">
+                        <span class="text-gray-600 dark:text-gray-400">Total Non-Current Assets</span>
+                        <span class="text-gray-900 dark:text-white">{{ report.non_current_assets.total|currency }}</span>
+                    </div>
                 </div>
-                {% else %}
-                <div class="py-4 text-center text-gray-500 dark:text-gray-400">
-                    No assets found
+
+                <!-- Current Assets -->
+                <div class="mb-6">
+                    <h5 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">Current Assets</h5>
+                    <div class="space-y-2">
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Inventory</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.current_assets.inventory|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Accounts Receivable</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.current_assets.accounts_receivable|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">VAT Receivable (Input VAT)</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.current_assets.vat_receivable|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Cash & Bank</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.current_assets.cash_and_bank|currency }}</span>
+                        </div>
+                        {% if report.current_assets.vendor_advances != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Vendor Advances</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.current_assets.vendor_advances|currency }}</span>
+                        </div>
+                        {% endif %}
+                        {% if report.current_assets.other_current_assets != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Other Current Assets</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.current_assets.other_current_assets|currency }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between py-2 mt-2 bg-gray-50 dark:bg-gray-700/50 px-2 rounded font-medium">
+                        <span class="text-gray-600 dark:text-gray-400">Total Current Assets</span>
+                        <span class="text-gray-900 dark:text-white">{{ report.current_assets.total|currency }}</span>
+                    </div>
                 </div>
-                {% endfor %}
-                <div class="flex justify-between py-3 bg-blue-50 dark:bg-blue-900/20 rounded px-2 font-bold">
-                    <span class="text-blue-800 dark:text-blue-300">Total Assets</span>
-                    <span class="text-blue-800 dark:text-blue-300">{{ "%.2f"|format(report.total_assets) }}</span>
+
+                <!-- Total Assets -->
+                <div class="flex justify-between py-3 bg-blue-100 dark:bg-blue-900/30 px-3 rounded-lg font-bold text-lg">
+                    <span class="text-blue-800 dark:text-blue-300">TOTAL ASSETS</span>
+                    <span class="text-blue-800 dark:text-blue-300">{{ report.total_assets|currency }}</span>
+                </div>
+            </div>
+
+            <!-- EQUITY & LIABILITIES COLUMN -->
+            <div>
+                <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-4 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">EQUITY & LIABILITIES</h4>
+                
+                <!-- Liabilities -->
+                <div class="mb-6">
+                    <h5 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">Liabilities</h5>
+                    <div class="space-y-2">
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Accounts Payable</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.liabilities.accounts_payable|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Payroll Liabilities</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.liabilities.payroll_liabilities|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 pl-4">
+                            <span class="text-gray-600 dark:text-gray-400">- PAYE Payable</span>
+                            <span class="text-gray-900 dark:text-white">{{ report.liabilities.paye_payable|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 pl-4">
+                            <span class="text-gray-600 dark:text-gray-400">- Pension Payable</span>
+                            <span class="text-gray-900 dark:text-white">{{ report.liabilities.pension_payable|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">VAT Payable (Output VAT)</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.liabilities.vat_payable|currency }}</span>
+                        </div>
+                        {% if report.liabilities.customer_advances != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Customer Advances</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.liabilities.customer_advances|currency }}</span>
+                        </div>
+                        {% endif %}
+                        {% if report.liabilities.other_liabilities != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Other Liabilities</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.liabilities.other_liabilities|currency }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between py-2 mt-2 bg-gray-50 dark:bg-gray-700/50 px-2 rounded font-medium">
+                        <span class="text-gray-600 dark:text-gray-400">Total Liabilities</span>
+                        <span class="text-gray-900 dark:text-white">{{ report.liabilities.total|currency }}</span>
+                    </div>
+                </div>
+
+                <!-- Equity -->
+                <div class="mb-6">
+                    <h5 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">Equity</h5>
+                    <div class="space-y-2">
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Owner's Equity</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.equity.owners_equity|currency }}</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Retained Earnings (Current Period)</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.equity.current_period_earnings|currency }}</span>
+                        </div>
+                        {% if report.equity.retained_earnings != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Retained Earnings (Prior Periods)</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.equity.retained_earnings|currency }}</span>
+                        </div>
+                        {% endif %}
+                        {% if report.equity.opening_balance_equity != 0 %}
+                        <div class="flex justify-between py-1">
+                            <span class="text-gray-700 dark:text-gray-300">Opening Balance Equity</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ report.equity.opening_balance_equity|currency }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between py-2 mt-2 bg-gray-50 dark:bg-gray-700/50 px-2 rounded font-medium">
+                        <span class="text-gray-600 dark:text-gray-400">Total Equity</span>
+                        <span class="text-gray-900 dark:text-white">{{ report.equity.total|currency }}</span>
+                    </div>
+                </div>
+
+                <!-- Total Equity & Liabilities -->
+                <div class="flex justify-between py-3 bg-green-100 dark:bg-green-900/30 px-3 rounded-lg font-bold text-lg">
+                    <span class="text-green-800 dark:text-green-300">TOTAL EQUITY & LIABILITIES</span>
+                    <span class="text-green-800 dark:text-green-300">{{ report.total_equity_and_liabilities|currency }}</span>
                 </div>
             </div>
         </div>
 
-        <div class="space-y-6">
-            <!-- Liabilities -->
-            <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Liabilities</h3>
-                <div class="space-y-3">
-                    {% for item in report.liabilities %}
-                    <div class="flex justify-between py-2 border-b dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">
-                            {{ item.account_code }} - {{ item.account_name }}
-                        </span>
-                        <span class="font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(item.balance) }}</span>
-                    </div>
-                    {% else %}
-                    <div class="py-4 text-center text-gray-500 dark:text-gray-400">
-                        No liabilities found
-                    </div>
-                    {% endfor %}
-                    <div class="flex justify-between py-3 bg-red-50 dark:bg-red-900/20 rounded px-2 font-bold">
-                        <span class="text-red-800 dark:text-red-300">Total Liabilities</span>
-                        <span class="text-red-800 dark:text-red-300">{{ "%.2f"|format(report.total_liabilities) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Equity -->
-            <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Equity</h3>
-                <div class="space-y-3">
-                    {% for item in report.equity %}
-                    <div class="flex justify-between py-2 border-b dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">
-                            {{ item.account_code }} - {{ item.account_name }}
-                        </span>
-                        <span class="font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(item.balance) }}</span>
-                    </div>
-                    {% else %}
-                    <div class="py-4 text-center text-gray-500 dark:text-gray-400">
-                        No equity found
-                    </div>
-                    {% endfor %}
-                    <div class="flex justify-between py-3 bg-purple-50 dark:bg-purple-900/20 rounded px-2 font-bold">
-                        <span class="text-purple-800 dark:text-purple-300">Total Equity</span>
-                        <span class="text-purple-800 dark:text-purple-300">{{ "%.2f"|format(report.total_equity) }}</span>
-                    </div>
+        <!-- Difference Check -->
+        {% set diff = report.total_assets - report.total_equity_and_liabilities %}
+        {% if diff != 0 %}
+        <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <p class="font-medium text-yellow-800 dark:text-yellow-300">Balance Sheet Difference</p>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-400">There is a difference of {{ diff|abs|currency }} between Assets and Equity & Liabilities. Please check your journal entries.</p>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Summary -->
-    <div class="mt-6 bg-white rounded-lg shadow dark:bg-gray-800 p-6">
-        <div class="grid grid-cols-3 gap-6 text-center">
-            <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Total Assets</p>
-                <p class="text-2xl font-bold text-blue-600">{{ "%.2f"|format(report.total_assets) }}</p>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Total Liabilities + Equity</p>
-                <p class="text-2xl font-bold text-green-600">{{ "%.2f"|format(report.total_liabilities + report.total_equity) }}</p>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Difference</p>
-                {% set diff = report.total_assets - (report.total_liabilities + report.total_equity) %}
-                <p class="text-2xl font-bold {% if diff == 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                    {{ "%.2f"|format(diff) }}
-                </p>
-            </div>
-        </div>
+        {% endif %}
     </div>
     {% else %}
     <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
         <p class="text-center text-gray-500 dark:text-gray-400">
-            Select a date and click "Generate" to view the balance sheet.
+            Select a date and click "Generate Report" to view the Statement of Financial Position.
         </p>
     </div>
     {% endif %}

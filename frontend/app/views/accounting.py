@@ -195,16 +195,18 @@ def general_ledger():
 @login_required
 @permission_required('reports:view')
 def balance_sheet():
-    """Balance Sheet Report"""
+    """Balance Sheet Report - Statement of Financial Position"""
     as_of_date = request.args.get('as_of_date', '')
     
     report = {
-        'assets': [],
-        'liabilities': [],
-        'equity': [],
+        'non_current_assets': {'fixed_assets_cost': 0, 'accumulated_depreciation': 0, 'net_book_value': 0, 'other_non_current': 0, 'total': 0},
+        'current_assets': {'inventory': 0, 'accounts_receivable': 0, 'vat_receivable': 0, 'cash_and_bank': 0, 'other_current_assets': 0, 'vendor_advances': 0, 'total': 0},
         'total_assets': 0,
+        'liabilities': {'accounts_payable': 0, 'payroll_liabilities': 0, 'paye_payable': 0, 'pension_payable': 0, 'vat_payable': 0, 'customer_advances': 0, 'other_liabilities': 0, 'total': 0},
+        'equity': {'owners_equity': 0, 'retained_earnings': 0, 'opening_balance_equity': 0, 'current_period_earnings': 0, 'total': 0},
         'total_liabilities': 0,
         'total_equity': 0,
+        'total_equity_and_liabilities': 0,
         'as_of_date': as_of_date
     }
     
@@ -216,7 +218,7 @@ def balance_sheet():
             report = data
     
     return render_template('accounting/balance_sheet.html', 
-                          title='Balance Sheet', 
+                          title='Statement of Financial Position', 
                           report=report,
                           as_of_date=as_of_date)
 
@@ -290,8 +292,14 @@ def balance_sheet_pdf():
     as_of_date = request.args.get('as_of_date')
     
     report = {
-        'assets': [], 'liabilities': [], 'equity': [],
-        'total_assets': 0, 'total_liabilities': 0, 'total_equity': 0
+        'non_current_assets': {'fixed_assets_cost': 0, 'accumulated_depreciation': 0, 'net_book_value': 0, 'other_non_current': 0, 'total': 0},
+        'current_assets': {'inventory': 0, 'accounts_receivable': 0, 'vat_receivable': 0, 'cash_and_bank': 0, 'other_current_assets': 0, 'vendor_advances': 0, 'total': 0},
+        'total_assets': 0,
+        'liabilities': {'accounts_payable': 0, 'payroll_liabilities': 0, 'paye_payable': 0, 'pension_payable': 0, 'vat_payable': 0, 'customer_advances': 0, 'other_liabilities': 0, 'total': 0},
+        'equity': {'owners_equity': 0, 'retained_earnings': 0, 'opening_balance_equity': 0, 'current_period_earnings': 0, 'total': 0},
+        'total_liabilities': 0,
+        'total_equity': 0,
+        'total_equity_and_liabilities': 0
     }
     
     if as_of_date:
@@ -313,7 +321,7 @@ def balance_sheet_pdf():
     
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename=balance_sheet_{as_of_date or date.today()}.pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=statement_of_financial_position_{as_of_date or date.today()}.pdf'
     return response
 
 
@@ -325,8 +333,14 @@ def balance_sheet_excel():
     as_of_date = request.args.get('as_of_date')
     
     report = {
-        'assets': [], 'liabilities': [], 'equity': [],
-        'total_assets': 0, 'total_liabilities': 0, 'total_equity': 0
+        'non_current_assets': {'fixed_assets_cost': 0, 'accumulated_depreciation': 0, 'net_book_value': 0, 'other_non_current': 0, 'total': 0},
+        'current_assets': {'inventory': 0, 'accounts_receivable': 0, 'vat_receivable': 0, 'cash_and_bank': 0, 'other_current_assets': 0, 'vendor_advances': 0, 'total': 0},
+        'total_assets': 0,
+        'liabilities': {'accounts_payable': 0, 'payroll_liabilities': 0, 'paye_payable': 0, 'pension_payable': 0, 'vat_payable': 0, 'customer_advances': 0, 'other_liabilities': 0, 'total': 0},
+        'equity': {'owners_equity': 0, 'retained_earnings': 0, 'opening_balance_equity': 0, 'current_period_earnings': 0, 'total': 0},
+        'total_liabilities': 0,
+        'total_equity': 0,
+        'total_equity_and_liabilities': 0
     }
     
     if as_of_date:
@@ -336,14 +350,17 @@ def balance_sheet_excel():
     
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Balance Sheet"
+    ws.title = "Statement of Financial Position"
     
-    header_font = Font(bold=True, size=14)
-    section_font = Font(bold=True, size=12, color="333333")
+    title_font = Font(bold=True, size=16)
+    header_font = Font(bold=True, size=12)
+    section_font = Font(bold=True, size=11, color="333333")
+    subsection_font = Font(bold=True, size=10, italic=True, color="666666")
     currency_format = '#,##0.00'
     header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
-    header_font_white = Font(bold=True, color="FFFFFF")
-    total_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    asset_fill = PatternFill(start_color="DBEAFE", end_color="DBEAFE", fill_type="solid")
+    equity_fill = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
+    subtotal_fill = PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
     thin_border = Border(
         left=Side(style='thin'),
         right=Side(style='thin'),
@@ -352,103 +369,181 @@ def balance_sheet_excel():
     )
     
     # Title
-    ws['A1'] = "Balance Sheet"
-    ws['A1'].font = header_font
-    ws.merge_cells('A1:C1')
+    ws['A1'] = "Statement of Financial Position"
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:D1')
     
     ws['A2'] = f"As of: {as_of_date or date.today().isoformat()}"
-    ws.merge_cells('A2:C2')
+    ws.merge_cells('A2:D2')
     
     row = 4
     
-    # Assets Section
-    ws.cell(row=row, column=1, value="ASSETS").font = section_font
-    row += 1
-    
-    headers = ['Code', 'Account', 'Amount']
+    # Column headers
+    headers = ['Description', 'Amount']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=row, column=col, value=header)
-        cell.font = header_font_white
+        cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = header_fill
         cell.border = thin_border
+    row += 2
+    
+    # ASSETS SECTION
+    ws.cell(row=row, column=1, value="ASSETS").font = header_font
+    ws.cell(row=row, column=1).fill = asset_fill
+    ws.cell(row=row, column=2).fill = asset_fill
     row += 1
     
-    for item in report.get('assets', []):
-        ws.cell(row=row, column=1, value=item.get('account_code')).border = thin_border
-        ws.cell(row=row, column=2, value=item.get('account_name')).border = thin_border
-        amount_cell = ws.cell(row=row, column=3, value=item.get('balance'))
-        amount_cell.number_format = currency_format
-        amount_cell.border = thin_border
+    # Non-Current Assets
+    ws.cell(row=row, column=1, value="Non-Current Assets").font = subsection_font
+    row += 1
+    
+    ws.cell(row=row, column=1, value="Fixed Assets (Cost)").border = thin_border
+    ws.cell(row=row, column=2, value=report['non_current_assets']['fixed_assets_cost']).number_format = currency_format
+    ws.cell(row=row, column=2).border = thin_border
+    row += 1
+    
+    ws.cell(row=row, column=1, value="Less: Accumulated Depreciation").border = thin_border
+    ws.cell(row=row, column=2, value=abs(report['non_current_assets']['accumulated_depreciation'])).number_format = currency_format
+    ws.cell(row=row, column=2).border = thin_border
+    row += 1
+    
+    ws.cell(row=row, column=1, value="Net Book Value").font = Font(bold=True)
+    ws.cell(row=row, column=1).border = thin_border
+    ws.cell(row=row, column=2, value=report['non_current_assets']['net_book_value']).number_format = currency_format
+    ws.cell(row=row, column=2).font = Font(bold=True)
+    ws.cell(row=row, column=2).border = thin_border
+    row += 1
+    
+    if report['non_current_assets']['other_non_current'] != 0:
+        ws.cell(row=row, column=1, value="Other Non-Current Assets").border = thin_border
+        ws.cell(row=row, column=2, value=report['non_current_assets']['other_non_current']).number_format = currency_format
+        ws.cell(row=row, column=2).border = thin_border
         row += 1
+    
+    ws.cell(row=row, column=1, value="Total Non-Current Assets").font = Font(bold=True)
+    ws.cell(row=row, column=1).fill = subtotal_fill
+    ws.cell(row=row, column=2, value=report['non_current_assets']['total']).number_format = currency_format
+    ws.cell(row=row, column=2).font = Font(bold=True)
+    ws.cell(row=row, column=2).fill = subtotal_fill
+    row += 2
+    
+    # Current Assets
+    ws.cell(row=row, column=1, value="Current Assets").font = subsection_font
+    row += 1
+    
+    current_asset_items = [
+        ('Inventory', report['current_assets']['inventory']),
+        ('Accounts Receivable', report['current_assets']['accounts_receivable']),
+        ('VAT Receivable (Input VAT)', report['current_assets']['vat_receivable']),
+        ('Cash & Bank', report['current_assets']['cash_and_bank']),
+    ]
+    
+    if report['current_assets']['vendor_advances'] != 0:
+        current_asset_items.append(('Vendor Advances', report['current_assets']['vendor_advances']))
+    if report['current_assets']['other_current_assets'] != 0:
+        current_asset_items.append(('Other Current Assets', report['current_assets']['other_current_assets']))
+    
+    for item_name, item_value in current_asset_items:
+        ws.cell(row=row, column=1, value=item_name).border = thin_border
+        ws.cell(row=row, column=2, value=item_value).number_format = currency_format
+        ws.cell(row=row, column=2).border = thin_border
+        row += 1
+    
+    ws.cell(row=row, column=1, value="Total Current Assets").font = Font(bold=True)
+    ws.cell(row=row, column=1).fill = subtotal_fill
+    ws.cell(row=row, column=2, value=report['current_assets']['total']).number_format = currency_format
+    ws.cell(row=row, column=2).font = Font(bold=True)
+    ws.cell(row=row, column=2).fill = subtotal_fill
+    row += 2
     
     # Total Assets
-    total_cell = ws.cell(row=row, column=2, value="Total Assets")
-    total_cell.font = Font(bold=True)
-    total_cell.fill = total_fill
-    ws.cell(row=row, column=3, value=report.get('total_assets', 0)).number_format = currency_format
-    ws.cell(row=row, column=3).font = Font(bold=True)
-    ws.cell(row=row, column=3).fill = total_fill
-    row += 2
+    ws.cell(row=row, column=1, value="TOTAL ASSETS").font = header_font
+    ws.cell(row=row, column=1).fill = asset_fill
+    ws.cell(row=row, column=2, value=report['total_assets']).number_format = currency_format
+    ws.cell(row=row, column=2).font = header_font
+    ws.cell(row=row, column=2).fill = asset_fill
+    row += 3
     
-    # Liabilities Section
-    ws.cell(row=row, column=1, value="LIABILITIES").font = section_font
+    # EQUITY & LIABILITIES SECTION
+    ws.cell(row=row, column=1, value="EQUITY & LIABILITIES").font = header_font
+    ws.cell(row=row, column=1).fill = equity_fill
+    ws.cell(row=row, column=2).fill = equity_fill
     row += 1
     
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=row, column=col, value=header)
-        cell.font = header_font_white
-        cell.fill = header_fill
-        cell.border = thin_border
+    # Liabilities
+    ws.cell(row=row, column=1, value="Liabilities").font = subsection_font
     row += 1
     
-    for item in report.get('liabilities', []):
-        ws.cell(row=row, column=1, value=item.get('account_code')).border = thin_border
-        ws.cell(row=row, column=2, value=item.get('account_name')).border = thin_border
-        amount_cell = ws.cell(row=row, column=3, value=item.get('balance'))
-        amount_cell.number_format = currency_format
-        amount_cell.border = thin_border
+    liability_items = [
+        ('Accounts Payable', report['liabilities']['accounts_payable']),
+        ('Payroll Liabilities', report['liabilities']['payroll_liabilities']),
+        ('- PAYE Payable', report['liabilities']['paye_payable']),
+        ('- Pension Payable', report['liabilities']['pension_payable']),
+        ('VAT Payable (Output VAT)', report['liabilities']['vat_payable']),
+    ]
+    
+    if report['liabilities']['customer_advances'] != 0:
+        liability_items.append(('Customer Advances', report['liabilities']['customer_advances']))
+    if report['liabilities']['other_liabilities'] != 0:
+        liability_items.append(('Other Liabilities', report['liabilities']['other_liabilities']))
+    
+    for item_name, item_value in liability_items:
+        ws.cell(row=row, column=1, value=item_name).border = thin_border
+        ws.cell(row=row, column=2, value=item_value).number_format = currency_format
+        ws.cell(row=row, column=2).border = thin_border
         row += 1
     
-    # Total Liabilities
-    total_cell = ws.cell(row=row, column=2, value="Total Liabilities")
-    total_cell.font = Font(bold=True)
-    total_cell.fill = total_fill
-    ws.cell(row=row, column=3, value=report.get('total_liabilities', 0)).number_format = currency_format
-    ws.cell(row=row, column=3).font = Font(bold=True)
-    ws.cell(row=row, column=3).fill = total_fill
+    ws.cell(row=row, column=1, value="Total Liabilities").font = Font(bold=True)
+    ws.cell(row=row, column=1).fill = subtotal_fill
+    ws.cell(row=row, column=2, value=report['liabilities']['total']).number_format = currency_format
+    ws.cell(row=row, column=2).font = Font(bold=True)
+    ws.cell(row=row, column=2).fill = subtotal_fill
     row += 2
     
-    # Equity Section
-    ws.cell(row=row, column=1, value="EQUITY").font = section_font
+    # Equity
+    ws.cell(row=row, column=1, value="Equity").font = subsection_font
     row += 1
     
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=row, column=col, value=header)
-        cell.font = header_font_white
-        cell.fill = header_fill
-        cell.border = thin_border
-    row += 1
+    equity_items = [
+        ("Owner's Equity", report['equity']['owners_equity']),
+        ('Retained Earnings (Current Period)', report['equity']['current_period_earnings']),
+    ]
     
-    for item in report.get('equity', []):
-        ws.cell(row=row, column=1, value=item.get('account_code')).border = thin_border
-        ws.cell(row=row, column=2, value=item.get('account_name')).border = thin_border
-        amount_cell = ws.cell(row=row, column=3, value=item.get('balance'))
-        amount_cell.number_format = currency_format
-        amount_cell.border = thin_border
+    if report['equity']['retained_earnings'] != 0:
+        equity_items.append(('Retained Earnings (Prior Periods)', report['equity']['retained_earnings']))
+    if report['equity']['opening_balance_equity'] != 0:
+        equity_items.append(('Opening Balance Equity', report['equity']['opening_balance_equity']))
+    
+    for item_name, item_value in equity_items:
+        ws.cell(row=row, column=1, value=item_name).border = thin_border
+        ws.cell(row=row, column=2, value=item_value).number_format = currency_format
+        ws.cell(row=row, column=2).border = thin_border
         row += 1
     
-    # Total Equity
-    total_cell = ws.cell(row=row, column=2, value="Total Equity")
-    total_cell.font = Font(bold=True)
-    total_cell.fill = total_fill
-    ws.cell(row=row, column=3, value=report.get('total_equity', 0)).number_format = currency_format
-    ws.cell(row=row, column=3).font = Font(bold=True)
-    ws.cell(row=row, column=3).fill = total_fill
+    ws.cell(row=row, column=1, value="Total Equity").font = Font(bold=True)
+    ws.cell(row=row, column=1).fill = subtotal_fill
+    ws.cell(row=row, column=2, value=report['equity']['total']).number_format = currency_format
+    ws.cell(row=row, column=2).font = Font(bold=True)
+    ws.cell(row=row, column=2).fill = subtotal_fill
+    row += 2
+    
+    # Total Equity & Liabilities
+    ws.cell(row=row, column=1, value="TOTAL EQUITY & LIABILITIES").font = header_font
+    ws.cell(row=row, column=1).fill = equity_fill
+    ws.cell(row=row, column=2, value=report['total_equity_and_liabilities']).number_format = currency_format
+    ws.cell(row=row, column=2).font = header_font
+    ws.cell(row=row, column=2).fill = equity_fill
+    row += 2
+    
+    # Balance Check
+    diff = abs(report['total_assets'] - report['total_equity_and_liabilities'])
+    if diff > 0.01:
+        ws.cell(row=row, column=1, value=f"Warning: Balance Sheet difference of {diff:.2f}")
+        ws.cell(row=row, column=1).font = Font(color="FF0000")
     
     # Adjust column widths
-    ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 35
-    ws.column_dimensions['C'].width = 18
+    ws.column_dimensions['A'].width = 40
+    ws.column_dimensions['B'].width = 20
     
     output = BytesIO()
     wb.save(output)
@@ -456,7 +551,7 @@ def balance_sheet_excel():
     
     response = make_response(output.getvalue())
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename=balance_sheet_{as_of_date or date.today()}.xlsx'
+    response.headers['Content-Disposition'] = f'attachment; filename=statement_of_financial_position_{as_of_date or date.today()}.xlsx'
     return response
 
 

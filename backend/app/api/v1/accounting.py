@@ -408,7 +408,7 @@ async def get_balance_sheet(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    """Get balance sheet report"""
+    """Get balance sheet report in Statement of Financial Position format"""
     report_service = ReportService(db)
     data = report_service.get_balance_sheet(
         current_user.business_id,
@@ -416,25 +416,52 @@ async def get_balance_sheet(
         as_of_date
     )
     
-    def serialize_items(items):
-        result = []
-        for item in items:
-            account = item.get('account')
-            result.append({
-                'account_id': account.id if account else None,
-                'account_code': account.code if account else None,
-                'account_name': account.name if account else None,
-                'balance': float(item.get('balance', 0))
-            })
-        return result
+    def serialize_decimal(value):
+        """Convert Decimal to float for JSON serialization"""
+        return float(value) if value is not None else 0.0
     
     return {
-        'assets': serialize_items(data.get('assets', [])),
-        'liabilities': serialize_items(data.get('liabilities', [])),
-        'equity': serialize_items(data.get('equity', [])),
-        'total_assets': float(data.get('total_assets', 0)),
-        'total_liabilities': float(data.get('total_liabilities', 0)),
-        'total_equity': float(data.get('total_equity', 0)),
+        # Non-Current Assets
+        'non_current_assets': {
+            'fixed_assets_cost': serialize_decimal(data['non_current_assets']['fixed_assets_cost']),
+            'accumulated_depreciation': serialize_decimal(data['non_current_assets']['accumulated_depreciation']),
+            'net_book_value': serialize_decimal(data['non_current_assets']['net_book_value']),
+            'other_non_current': serialize_decimal(data['non_current_assets']['other_non_current']),
+            'total': serialize_decimal(data['non_current_assets']['total'])
+        },
+        # Current Assets
+        'current_assets': {
+            'inventory': serialize_decimal(data['current_assets']['inventory']),
+            'accounts_receivable': serialize_decimal(data['current_assets']['accounts_receivable']),
+            'vat_receivable': serialize_decimal(data['current_assets']['vat_receivable']),
+            'cash_and_bank': serialize_decimal(data['current_assets']['cash_and_bank']),
+            'other_current_assets': serialize_decimal(data['current_assets']['other_current_assets']),
+            'vendor_advances': serialize_decimal(data['current_assets']['vendor_advances']),
+            'total': serialize_decimal(data['current_assets']['total'])
+        },
+        'total_assets': serialize_decimal(data['total_assets']),
+        # Liabilities
+        'liabilities': {
+            'accounts_payable': serialize_decimal(data['liabilities']['accounts_payable']),
+            'payroll_liabilities': serialize_decimal(data['liabilities']['payroll_liabilities']),
+            'paye_payable': serialize_decimal(data['liabilities']['paye_payable']),
+            'pension_payable': serialize_decimal(data['liabilities']['pension_payable']),
+            'vat_payable': serialize_decimal(data['liabilities']['vat_payable']),
+            'customer_advances': serialize_decimal(data['liabilities']['customer_advances']),
+            'other_liabilities': serialize_decimal(data['liabilities']['other_liabilities']),
+            'total': serialize_decimal(data['liabilities']['total'])
+        },
+        # Equity
+        'equity': {
+            'owners_equity': serialize_decimal(data['equity']['owners_equity']),
+            'retained_earnings': serialize_decimal(data['equity']['retained_earnings']),
+            'opening_balance_equity': serialize_decimal(data['equity']['opening_balance_equity']),
+            'current_period_earnings': serialize_decimal(data['equity']['current_period_earnings']),
+            'total': serialize_decimal(data['equity']['total'])
+        },
+        'total_liabilities': serialize_decimal(data['total_liabilities']),
+        'total_equity': serialize_decimal(data['total_equity']),
+        'total_equity_and_liabilities': serialize_decimal(data['total_equity_and_liabilities']),
         'as_of_date': data.get('as_of_date').isoformat() if data.get('as_of_date') else None
     }
 
