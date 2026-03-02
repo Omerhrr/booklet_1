@@ -179,16 +179,261 @@ def general_ledger():
     accounts, _ = api_request('GET', '/accounting/accounts')
     
     entries = []
+    summary = {}
+    
     if status == 200 and ledger_data:
-        entries = ledger_data if isinstance(ledger_data, list) else []
+        entries = ledger_data.get('entries', []) if isinstance(ledger_data, dict) else ledger_data
+        summary = ledger_data.get('summary', {}) if isinstance(ledger_data, dict) else {}
     
     return render_template('accounting/general_ledger.html', 
                           title='General Ledger', 
                           entries=entries,
+                          summary=summary,
                           accounts=accounts or [],
                           selected_account=account_id,
                           start_date=start_date,
                           end_date=end_date)
+
+
+@bp.route('/ledger/export/pdf')
+@login_required
+@permission_required('accounts:view')
+def general_ledger_pdf():
+    """Export General Ledger to PDF"""
+    # Get filter parameters
+    account_id = request.args.get('account_id', '')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    
+    # Build API URL with filters
+    api_url = '/accounting/reports/general-ledger?'
+    if account_id:
+        api_url += f'account_id={account_id}&'
+    if start_date:
+        api_url += f'start_date={start_date}&'
+    if end_date:
+        api_url += f'end_date={end_date}&'
+    
+    # Fetch data
+    ledger_data, status = api_request('GET', api_url)
+    
+    entries = []
+    summary = {}
+    
+    if status == 200 and ledger_data:
+        entries = ledger_data.get('entries', []) if isinstance(ledger_data, dict) else ledger_data
+        summary = ledger_data.get('summary', {}) if isinstance(ledger_data, dict) else {}
+    
+    # Get selected account name if filtering by account
+    selected_account_name = "All Accounts"
+    if account_id:
+        accounts, _ = api_request('GET', '/accounting/accounts')
+        for acc in (accounts or []):
+            if str(acc.get('id')) == str(account_id):
+                selected_account_name = f"{acc.get('code')} - {acc.get('name')}"
+                break
+    
+    business = {
+        'name': session.get('business_name', 'Company'),
+        'branch': session.get('selected_branch_name', 'Main Branch')
+    }
+    
+    html = render_template('accounting/pdf/general_ledger_pdf.html',
+                          entries=entries,
+                          summary=summary,
+                          business=business,
+                          selected_account_name=selected_account_name,
+                          start_date=start_date,
+                          end_date=end_date,
+                          now=datetime.now())
+    
+    pdf = HTML(string=html).write_pdf()
+    
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=general_ledger_{start_date or "all"}_to_{end_date or "now"}.pdf'
+    return response
+
+
+@bp.route('/ledger/export/excel')
+@login_required
+@permission_required('accounts:view')
+def general_ledger_excel():
+    """Export General Ledger to Excel"""
+    # Get filter parameters
+    account_id = request.args.get('account_id', '')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    
+    # Build API URL with filters
+    api_url = '/accounting/reports/general-ledger?'
+    if account_id:
+        api_url += f'account_id={account_id}&'
+    if start_date:
+        api_url += f'start_date={start_date}&'
+    if end_date:
+        api_url += f'end_date={end_date}&'
+    
+    # Fetch data
+    ledger_data, status = api_request('GET', api_url)
+    
+    entries = []
+    summary = {}
+    
+    if status == 200 and ledger_data:
+        entries = ledger_data.get('entries', []) if isinstance(ledger_data, dict) else ledger_data
+        summary = ledger_data.get('summary', {}) if isinstance(ledger_data, dict) else {}
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "General Ledger"
+    
+    title_font = Font(bold=True, size=16)
+    header_font = Font(bold=True, size=12)
+    currency_format = '#,##0.00'
+    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    header_font_white = Font(bold=True, color="FFFFFF")
+    debit_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    credit_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    total_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    opening_fill = PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws['A1'] = f"General Ledger - {session.get('business_name', 'Company')}"
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:G1')
+    
+    ws['A2'] = f"Period: {start_date or 'All'} to {end_date or 'Present'}"
+    ws.merge_cells('A2:G2')
+    
+    row = 4
+    
+    # Summary section if available
+    if summary and summary.get('accounts_summary'):
+        ws.cell(row=row, column=1, value="Accounts Summary").font = header_font
+        row += 1
+        
+        summary_headers = ['Code', 'Account', 'Type', 'Opening', 'Debits', 'Credits', 'Closing']
+        for col, header in enumerate(summary_headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = header_font_white
+            cell.fill = header_fill
+            cell.border = thin_border
+        row += 1
+        
+        for acc in summary.get('accounts_summary', []):
+            ws.cell(row=row, column=1, value=acc.get('account_code')).border = thin_border
+            ws.cell(row=row, column=2, value=acc.get('account_name')).border = thin_border
+            ws.cell(row=row, column=3, value=acc.get('account_type')).border = thin_border
+            ws.cell(row=row, column=4, value=acc.get('opening_balance')).number_format = currency_format
+            ws.cell(row=row, column=4).border = thin_border
+            ws.cell(row=row, column=5, value=acc.get('total_debit')).number_format = currency_format
+            ws.cell(row=row, column=5).border = thin_border
+            ws.cell(row=row, column=6, value=acc.get('total_credit')).number_format = currency_format
+            ws.cell(row=row, column=6).border = thin_border
+            ws.cell(row=row, column=7, value=acc.get('closing_balance')).number_format = currency_format
+            ws.cell(row=row, column=7).border = thin_border
+            row += 1
+        
+        row += 2
+    
+    # Entries section
+    ws.cell(row=row, column=1, value="Ledger Entries").font = header_font
+    row += 1
+    
+    entry_headers = ['Date', 'Account', 'Description', 'Reference', 'Debit', 'Credit', 'Balance']
+    for col, header in enumerate(entry_headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = header_font_white
+        cell.fill = header_fill
+        cell.border = thin_border
+    row += 1
+    
+    for entry in entries:
+        is_opening = entry.get('is_opening', False)
+        
+        date_cell = ws.cell(row=row, column=1, value=entry.get('transaction_date'))
+        date_cell.border = thin_border
+        if is_opening:
+            date_cell.fill = opening_fill
+        
+        account_cell = ws.cell(row=row, column=2, value=f"{entry.get('account_code', '')} {entry.get('account_name', '')}")
+        account_cell.border = thin_border
+        if is_opening:
+            account_cell.fill = opening_fill
+        
+        desc_cell = ws.cell(row=row, column=3, value=entry.get('description', '-'))
+        desc_cell.border = thin_border
+        if is_opening:
+            desc_cell.fill = opening_fill
+        
+        ref_cell = ws.cell(row=row, column=4, value=entry.get('reference', '-'))
+        ref_cell.border = thin_border
+        if is_opening:
+            ref_cell.fill = opening_fill
+        
+        debit = entry.get('debit', 0)
+        debit_cell = ws.cell(row=row, column=5, value=debit if debit > 0 else None)
+        debit_cell.number_format = currency_format
+        debit_cell.border = thin_border
+        if debit > 0:
+            debit_cell.fill = debit_fill
+        elif is_opening:
+            debit_cell.fill = opening_fill
+        
+        credit = entry.get('credit', 0)
+        credit_cell = ws.cell(row=row, column=6, value=credit if credit > 0 else None)
+        credit_cell.number_format = currency_format
+        credit_cell.border = thin_border
+        if credit > 0:
+            credit_cell.fill = credit_fill
+        elif is_opening:
+            credit_cell.fill = opening_fill
+        
+        balance = entry.get('balance', 0)
+        balance_cell = ws.cell(row=row, column=7, value=balance)
+        balance_cell.number_format = currency_format
+        balance_cell.border = thin_border
+        balance_cell.font = Font(bold=True)
+        
+        row += 1
+    
+    # Totals row
+    row += 1
+    ws.cell(row=row, column=4, value="Totals:").font = Font(bold=True)
+    ws.cell(row=row, column=5, value=summary.get('total_debit')).number_format = currency_format
+    ws.cell(row=row, column=5).font = Font(bold=True)
+    ws.cell(row=row, column=5).fill = total_fill
+    ws.cell(row=row, column=6, value=summary.get('total_credit')).number_format = currency_format
+    ws.cell(row=row, column=6).font = Font(bold=True)
+    ws.cell(row=row, column=6).fill = total_fill
+    ws.cell(row=row, column=7, value=summary.get('net_movement')).number_format = currency_format
+    ws.cell(row=row, column=7).font = Font(bold=True)
+    ws.cell(row=row, column=7).fill = total_fill
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 35
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 15
+    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['G'].width = 15
+    
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename=general_ledger_{start_date or "all"}_to_{end_date or "now"}.xlsx'
+    return response
 
 
 @bp.route('/balance-sheet')

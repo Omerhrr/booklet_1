@@ -731,7 +731,9 @@ class ReportService:
     
     def get_general_ledger(self, business_id: int, branch_id: int = None, account_id: int = None, 
                           start_date: date = None, end_date: date = None) -> List[Dict]:
-        """Generate general ledger report"""
+        """Generate general ledger report with proper per-account running balances"""
+        
+        # Build base query for ledger entries
         query = self.db.query(LedgerEntry).options(
             joinedload(LedgerEntry.account)
         ).join(Account).filter(
@@ -747,16 +749,171 @@ class ReportService:
         if end_date:
             query = query.filter(LedgerEntry.transaction_date <= end_date)
         
-        entries = query.order_by(LedgerEntry.transaction_date, LedgerEntry.id).all()
+        entries = query.order_by(
+            LedgerEntry.account_id,
+            LedgerEntry.transaction_date, 
+            LedgerEntry.id
+        ).all()
         
+        # Group entries by account and calculate running balance per account
         result = []
-        running_balance = Decimal("0")
+        account_balances = {}  # Track running balance per account
+        
+        # Calculate opening balances for each account if start_date is provided
+        if start_date:
+            # Get all unique accounts from entries
+            account_ids = set(e.account_id for e in entries)
+            
+            for acc_id in account_ids:
+                opening_query = self.db.query(
+                    func.sum(LedgerEntry.debit - LedgerEntry.credit).label('opening_balance')
+                ).join(Account).filter(
+                    Account.business_id == business_id,
+                    LedgerEntry.account_id == acc_id,
+                    LedgerEntry.transaction_date < start_date
+                )
+                
+                if branch_id:
+                    opening_query = opening_query.filter(LedgerEntry.branch_id == branch_id)
+                
+                opening_result = opening_query.scalar()
+                account_balances[acc_id] = opening_result or Decimal("0")
+                
+                # Add opening balance entry
+                account = self.db.query(Account).filter(Account.id == acc_id).first()
+                if account and account_balances[acc_id] != 0:
+                    result.append({
+                        "entry": type('obj', (object,), {
+                            'id': None,
+                            'transaction_date': start_date,
+                            'account': account,
+                            'account_id': acc_id,
+                            'description': 'Opening Balance',
+                            'reference': '',
+                            'debit': Decimal("0"),
+                            'credit': Decimal("0"),
+                            'journal_voucher_id': None
+                        })(),
+                        "balance": account_balances[acc_id],
+                        "is_opening": True,
+                        "account_info": {
+                            "id": account.id,
+                            "code": account.code,
+                            "name": account.name,
+                            "type": account.type
+                        }
+                    })
+        else:
+            # Initialize all accounts with zero balance
+            for entry in entries:
+                if entry.account_id not in account_balances:
+                    account_balances[entry.account_id] = Decimal("0")
+        
+        # Process entries and calculate running balances
+        current_account_id = None
         
         for entry in entries:
-            running_balance += entry.debit - entry.credit
+            # Reset balance when switching accounts (if no start_date)
+            if not start_date and current_account_id != entry.account_id:
+                current_account_id = entry.account_id
+                if entry.account_id not in account_balances:
+                    account_balances[entry.account_id] = Decimal("0")
+            
+            # Update running balance for this account
+            account_balances[entry.account_id] = account_balances.get(entry.account_id, Decimal("0")) + (entry.debit - entry.credit)
+            
             result.append({
                 "entry": entry,
-                "balance": running_balance
+                "balance": account_balances[entry.account_id],
+                "is_opening": False,
+                "account_info": {
+                    "id": entry.account.id,
+                    "code": entry.account.code if entry.account else '',
+                    "name": entry.account.name if entry.account else '',
+                    "type": entry.account.type if entry.account else ''
+                }
             })
         
         return result
+    
+    def get_general_ledger_summary(self, business_id: int, branch_id: int = None, 
+                                   account_id: int = None, start_date: date = None, 
+                                   end_date: date = None) -> Dict:
+        """Get summary statistics for General Ledger"""
+        
+        # Build query for totals
+        query = self.db.query(
+            LedgerEntry.account_id,
+            func.sum(LedgerEntry.debit).label('total_debit'),
+            func.sum(LedgerEntry.credit).label('total_credit'),
+            func.count(LedgerEntry.id).label('entry_count')
+        ).join(Account).filter(
+            Account.business_id == business_id
+        )
+        
+        if branch_id:
+            query = query.filter(LedgerEntry.branch_id == branch_id)
+        if account_id:
+            query = query.filter(LedgerEntry.account_id == account_id)
+        if start_date:
+            query = query.filter(LedgerEntry.transaction_date >= start_date)
+        if end_date:
+            query = query.filter(LedgerEntry.transaction_date <= end_date)
+        
+        results = query.group_by(LedgerEntry.account_id).all()
+        
+        # Calculate totals
+        total_debit = Decimal("0")
+        total_credit = Decimal("0")
+        total_entries = 0
+        accounts_summary = []
+        
+        for row in results:
+            debit = row.total_debit or Decimal("0")
+            credit = row.total_credit or Decimal("0")
+            
+            total_debit += debit
+            total_credit += credit
+            total_entries += row.entry_count
+            
+            # Get account info
+            account = self.db.query(Account).filter(Account.id == row.account_id).first()
+            if account:
+                # Get opening balance if start_date provided
+                opening_balance = Decimal("0")
+                if start_date:
+                    opening_query = self.db.query(
+                        func.sum(LedgerEntry.debit - LedgerEntry.credit)
+                    ).join(Account).filter(
+                        Account.business_id == business_id,
+                        LedgerEntry.account_id == row.account_id,
+                        LedgerEntry.transaction_date < start_date
+                    )
+                    if branch_id:
+                        opening_query = opening_query.filter(LedgerEntry.branch_id == branch_id)
+                    opening_balance = opening_query.scalar() or Decimal("0")
+                
+                # Closing balance = Opening + Debits - Credits
+                closing_balance = opening_balance + debit - credit
+                
+                accounts_summary.append({
+                    "account_id": row.account_id,
+                    "account_code": account.code,
+                    "account_name": account.name,
+                    "account_type": account.type,
+                    "opening_balance": float(opening_balance),
+                    "total_debit": float(debit),
+                    "total_credit": float(credit),
+                    "closing_balance": float(closing_balance),
+                    "entry_count": row.entry_count
+                })
+        
+        return {
+            "total_debit": float(total_debit),
+            "total_credit": float(total_credit),
+            "net_movement": float(total_debit - total_credit),
+            "total_entries": total_entries,
+            "accounts_summary": accounts_summary,
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None
+        }

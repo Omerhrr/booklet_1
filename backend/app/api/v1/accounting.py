@@ -513,9 +513,18 @@ async def get_general_ledger(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    """Get general ledger report"""
+    """Get general ledger report with per-account running balances"""
     report_service = ReportService(db)
     data = report_service.get_general_ledger(
+        current_user.business_id,
+        current_user.selected_branch.id,
+        account_id,
+        start_date,
+        end_date
+    )
+    
+    # Get summary statistics
+    summary = report_service.get_general_ledger_summary(
         current_user.business_id,
         current_user.selected_branch.id,
         account_id,
@@ -527,24 +536,25 @@ async def get_general_ledger(
     result = []
     for item in data:
         entry = item.get('entry')
-        account = entry.account if entry else None
+        account_info = item.get('account_info', {})
+        is_opening = item.get('is_opening', False)
         
         result.append({
-            'entry': {
-                'id': entry.id if entry else None,
-                'transaction_date': entry.transaction_date.isoformat() if entry and entry.transaction_date else None,
-                'description': entry.description if entry else None,
-                'reference': entry.reference if entry else None,
-                'debit': float(entry.debit) if entry and entry.debit else 0.0,
-                'credit': float(entry.credit) if entry and entry.credit else 0.0,
-                'account': {
-                    'id': account.id if account else None,
-                    'code': account.code if account else None,
-                    'name': account.name if account else None,
-                    'type': account.type if account and account.type else None
-                } if account else None
-            },
-            'balance': float(item.get('balance', 0))
+            'id': entry.id if entry else None,
+            'transaction_date': entry.transaction_date.isoformat() if entry and entry.transaction_date else None,
+            'account_id': account_info.get('id'),
+            'account_code': account_info.get('code', ''),
+            'account_name': account_info.get('name', ''),
+            'account_type': account_info.get('type', ''),
+            'description': entry.description if entry else None,
+            'reference': entry.reference if entry else None,
+            'debit': float(entry.debit) if entry and entry.debit else 0.0,
+            'credit': float(entry.credit) if entry and entry.credit else 0.0,
+            'balance': float(item.get('balance', 0)),
+            'is_opening': is_opening
         })
     
-    return result
+    return {
+        'entries': result,
+        'summary': summary
+    }

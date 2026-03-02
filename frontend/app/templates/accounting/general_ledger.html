@@ -2,14 +2,35 @@
 
 {% block content %}
 <div class="p-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">General Ledger</h1>
-        <p class="text-gray-500 dark:text-gray-400">View all ledger entries</p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">General Ledger</h1>
+            <p class="text-gray-500 dark:text-gray-400">Chronological record of all financial transactions</p>
+        </div>
+        {% if entries %}
+        <div class="flex gap-2">
+            <a href="{{ url_for('accounting.general_ledger_pdf', account_id=selected_account, start_date=start_date, end_date=end_date) }}" 
+               class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-500 dark:hover:bg-red-600 inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                </svg>
+                Export PDF
+            </a>
+            <a href="{{ url_for('accounting.general_ledger_excel', account_id=selected_account, start_date=start_date, end_date=end_date) }}" 
+               class="text-gray-900 bg-green-100 hover:bg-green-200 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-700 dark:text-white dark:hover:bg-green-600 inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clip-rule="evenodd"/>
+                </svg>
+                Export Excel
+            </a>
+        </div>
+        {% endif %}
     </div>
 
-    <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6 mb-6">
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <form method="GET" action="{{ url_for('accounting.general_ledger') }}">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                     <label for="account_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Account</label>
                     <select name="account_id" id="account_id" 
@@ -33,7 +54,7 @@
                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 </div>
                 <div class="flex items-end gap-2">
-                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
                         Apply Filter
                     </button>
                     <a href="{{ url_for('accounting.general_ledger') }}" class="text-gray-900 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
@@ -44,7 +65,124 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+    <!-- Summary Cards -->
+    {% if summary and summary.total_entries > 0 %}
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Debits</p>
+                    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ "%.2f"|format(summary.total_debit) }}</p>
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-.894.553L.448 6.458A1 1 0 000 7.25v10.5A1.5 1.5 0 001.5 19h17a1.5 1.5 0 001.5-1.5V7.25a1 1 0 00-.448-.791l-1.658-1.907A1 1 0 0017 3H3z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Credits</p>
+                    <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ "%.2f"|format(summary.total_credit) }}</p>
+                </div>
+                <div class="p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-.894.553L.448 6.458A1 1 0 000 7.25v10.5A1.5 1.5 0 001.5 19h17a1.5 1.5 0 001.5-1.5V7.25a1 1 0 00-.448-.791l-1.658-1.907A1 1 0 0017 3H3z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Net Movement</p>
+                    <p class="text-xl font-bold {{ 'text-green-600 dark:text-green-400' if summary.net_movement >= 0 else 'text-red-600 dark:text-red-400' }}">
+                        {{ "%.2f"|format(summary.net_movement) }}
+                    </p>
+                </div>
+                <div class="p-3 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                    <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Entries</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary.total_entries }}</p>
+                </div>
+                <div class="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Accounts Summary Section -->
+    {% if summary and summary.accounts_summary and summary.accounts_summary|length > 1 %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Accounts Summary</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">Code</th>
+                        <th class="px-6 py-3">Account Name</th>
+                        <th class="px-6 py-3">Type</th>
+                        <th class="px-6 py-3 text-right">Opening</th>
+                        <th class="px-6 py-3 text-right">Debits</th>
+                        <th class="px-6 py-3 text-right">Credits</th>
+                        <th class="px-6 py-3 text-right">Closing</th>
+                        <th class="px-6 py-3 text-center">Entries</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for acc in summary.accounts_summary %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 font-mono text-sm">{{ acc.account_code }}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ acc.account_name }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-0.5 rounded text-xs font-medium
+                                {% if acc.account_type == 'Asset' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                                {% elif acc.account_type == 'Liability' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
+                                {% elif acc.account_type == 'Equity' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
+                                {% elif acc.account_type == 'Revenue' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                {% elif acc.account_type == 'Expense' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ acc.account_type }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">{{ "%.2f"|format(acc.opening_balance) }}</td>
+                        <td class="px-6 py-4 text-right text-green-600 dark:text-green-400">{{ "%.2f"|format(acc.total_debit) }}</td>
+                        <td class="px-6 py-4 text-right text-red-600 dark:text-red-400">{{ "%.2f"|format(acc.total_credit) }}</td>
+                        <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(acc.closing_balance) }}</td>
+                        <td class="px-6 py-4 text-center">{{ acc.entry_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ledger Entries Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ledger Entries</h3>
+            {% if entries %}
+            <span class="px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">{{ entries|length }} entries</span>
+            {% endif %}
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -59,20 +197,30 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in entries %}
-                    {% set entry = item.entry %}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    {% set current_account_id = None %}
+                    {% for entry in entries %}
+                    {# Add account separator row when account changes #}
+                    {% if not selected_account and current_account_id != entry.account_id and loop.index > 1 %}
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <td colspan="7" class="px-6 py-2"></td>
+                    </tr>
+                    {% endif %}
+                    {% set current_account_id = entry.account_id %}
+                    
+                    <tr class="{{ 'bg-blue-50 dark:bg-blue-900/20 font-medium' if entry.is_opening else 'bg-white border-b dark:bg-gray-800 dark:border-gray-700' }} hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td class="px-6 py-4">{{ entry.transaction_date or '-' }}</td>
                         <td class="px-6 py-4">
-                            {% if entry.account %}
-                                {{ entry.account.code }} - {{ entry.account.name }}
-                            {% elif entry.account_code %}
-                                {{ entry.account_code }} - {{ entry.account_name }}
+                            {% if entry.account_code or entry.account_name %}
+                                <span class="font-mono text-xs text-gray-500 dark:text-gray-400 mr-1">{{ entry.account_code }}</span>
+                                {{ entry.account_name }}
                             {% else %}
                                 -
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4">{{ entry.description or '-' }}</td>
+                        <td class="px-6 py-4 {{ 'italic text-blue-700 dark:text-blue-300' if entry.is_opening }}">
+                            {{ entry.description or '-' }}
+                            {% if entry.is_opening %}<span class="text-xs ml-1">(Opening)</span>{% endif %}
+                        </td>
                         <td class="px-6 py-4">{{ entry.reference or '-' }}</td>
                         <td class="px-6 py-4 text-right {% if entry.debit > 0 %}text-green-600 font-medium{% endif %}">
                             {% if entry.debit > 0 %}
@@ -88,16 +236,32 @@
                                 -
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-right font-medium">{{ "%.2f"|format(item.balance) }}</td>
+                        <td class="px-6 py-4 text-right font-medium {{ 'text-green-600' if entry.balance > 0 else ('text-red-600' if entry.balance < 0 else '') }}">
+                            {{ "%.2f"|format(entry.balance) }}
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                            No ledger entries found. Try adjusting your filters or create some transactions.
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <svg class="mx-auto mb-3 w-12 h-12 text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                            </svg>
+                            <p class="font-medium">No ledger entries found</p>
+                            <p class="text-sm mt-1">Try adjusting your filters or create some transactions.</p>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                {% if entries %}
+                <tfoot class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 font-bold">
+                    <tr>
+                        <th class="px-6 py-4" colspan="4">Totals</th>
+                        <th class="px-6 py-4 text-right text-green-700 dark:text-green-300">{{ "%.2f"|format(summary.total_debit) }}</th>
+                        <th class="px-6 py-4 text-right text-red-700 dark:text-red-300">{{ "%.2f"|format(summary.total_credit) }}</th>
+                        <th class="px-6 py-4 text-right">{{ "%.2f"|format(summary.net_movement) }}</th>
+                    </tr>
+                </tfoot>
+                {% endif %}
             </table>
         </div>
     </div>
