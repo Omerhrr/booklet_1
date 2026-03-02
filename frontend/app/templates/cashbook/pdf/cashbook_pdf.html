@@ -1,0 +1,112 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Cash Book</div>
+<div class="report-period">Period: {{ start_date }} to {{ end_date }}</div>
+
+<!-- Account Summaries Section -->
+{% if summaries %}
+<h3 style="margin: 15px 0 10px 0; font-size: 13px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;">ACCOUNT SUMMARIES</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width: 30%;">Account</th>
+            <th style="width: 12%;">Type</th>
+            <th style="width: 14%;" class="text-right">Opening</th>
+            <th style="width: 14%;" class="text-right">Receipts</th>
+            <th style="width: 14%;" class="text-right">Payments</th>
+            <th style="width: 16%;" class="text-right">Closing</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for summary in summaries %}
+        <tr>
+            <td>{{ summary.account_name }}</td>
+            <td>{{ summary.account_type }}</td>
+            <td class="text-right">{{ "%.2f"|format(summary.opening_balance|float) }}</td>
+            <td class="text-right" style="color: #059669;">{{ "%.2f"|format(summary.total_receipts|float) }}</td>
+            <td class="text-right" style="color: #dc2626;">{{ "%.2f"|format(summary.total_payments|float) }}</td>
+            <td class="text-right"><strong>{{ "%.2f"|format(summary.closing_balance|float) }}</strong></td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="2"><strong>Total</strong></td>
+            <td class="text-right"><strong>{{ "%.2f"|format(summaries|sum(attribute='opening_balance')|float) }}</strong></td>
+            <td class="text-right"><strong>{{ "%.2f"|format(summaries|sum(attribute='total_receipts')|float) }}</strong></td>
+            <td class="text-right"><strong>{{ "%.2f"|format(summaries|sum(attribute='total_payments')|float) }}</strong></td>
+            <td class="text-right"><strong>{{ "%.2f"|format(summaries|sum(attribute='closing_balance')|float) }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+
+<!-- Cash Book Entries Section -->
+<h3 style="margin: 20px 0 10px 0; font-size: 13px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;">CASH BOOK ENTRIES</h3>
+
+{% if entries %}
+<table>
+    <thead>
+        <tr>
+            <th style="width: 12%;">Entry #</th>
+            <th style="width: 10%;">Date</th>
+            <th style="width: 10%;">Type</th>
+            <th style="width: 20%;">Account</th>
+            <th style="width: 23%;">Description</th>
+            <th style="width: 12%;">Payee/Payer</th>
+            <th style="width: 13%;" class="text-right">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% set total_receipts = 0 %}
+        {% set total_payments = 0 %}
+        {% for entry in entries %}
+        <tr>
+            <td style="font-size: 9px; font-family: monospace;">{{ entry.entry_number }}</td>
+            <td>{{ entry.entry_date }}</td>
+            <td>
+                {% if entry.entry_type == 'receipt' %}
+                <span style="color: #059669; font-weight: bold;">Receipt</span>
+                {% elif entry.entry_type == 'payment' %}
+                <span style="color: #dc2626; font-weight: bold;">Payment</span>
+                {% else %}
+                <span style="color: #2563eb; font-weight: bold;">{{ entry.entry_type.title() }}</span>
+                {% endif %}
+            </td>
+            <td>{{ entry.account_name or '-' }}</td>
+            <td>{{ (entry.description or '-')[:40] }}{% if entry.description and entry.description|length > 40 %}...{% endif %}</td>
+            <td>{{ (entry.payee_payer or '-')[:15] }}{% if entry.payee_payer and entry.payee_payer|length > 15 %}...{% endif %}</td>
+            <td class="text-right" style="{% if entry.entry_type == 'receipt' %}color: #059669;{% elif entry.entry_type == 'payment' %}color: #dc2626;{% endif %}">
+                {{ "%.2f"|format(entry.amount|float) }}
+            </td>
+        </tr>
+        {% if entry.entry_type == 'receipt' %}
+            {% set total_receipts = total_receipts + entry.amount %}
+        {% elif entry.entry_type == 'payment' %}
+            {% set total_payments = total_payments + entry.amount %}
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Summary Box -->
+<div class="summary-box" style="margin-top: 20px;">
+    <div class="summary-row">
+        <span class="summary-label" style="color: #059669;">Total Receipts:</span>
+        <span class="summary-value" style="color: #059669;">{{ "%.2f"|format(entries|selectattr('entry_type', 'equalto', 'receipt')|sum(attribute='amount')|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label" style="color: #dc2626;">Total Payments:</span>
+        <span class="summary-value" style="color: #dc2626;">{{ "%.2f"|format(entries|selectattr('entry_type', 'equalto', 'payment')|sum(attribute='amount')|float) }}</span>
+    </div>
+    <div class="summary-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc;">
+        <span class="summary-label" style="font-weight: bold;">Net Cash Flow:</span>
+        <span class="summary-value" style="font-weight: bold; font-size: 14px; color: {% if (entries|selectattr('entry_type', 'equalto', 'receipt')|sum(attribute='amount') - entries|selectattr('entry_type', 'equalto', 'payment')|sum(attribute='amount')) >= 0 %}#059669{% else %}#dc2626{% endif %};">
+            {{ "%.2f"|format((entries|selectattr('entry_type', 'equalto', 'receipt')|sum(attribute='amount') - entries|selectattr('entry_type', 'equalto', 'payment')|sum(attribute='amount'))|float) }}
+        </span>
+    </div>
+</div>
+{% else %}
+<p style="text-align: center; color: #888; margin: 20px 0;">No entries found for the selected period.</p>
+{% endif %}
+{% endblock %}

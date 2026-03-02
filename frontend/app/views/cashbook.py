@@ -1,9 +1,14 @@
 """
 Cash Book Routes
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, make_response
 from app import api_request, login_required, permission_required
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from weasyprint import HTML
 
 cashbook_bp = Blueprint('cashbook', __name__, url_prefix='/cashbook')
 
@@ -235,3 +240,233 @@ def reconcile_account(account_id):
         return jsonify(result)
     
     return jsonify({'error': 'Reconciliation failed'}), 500
+
+
+@cashbook_bp.route('/export/pdf')
+@login_required
+@permission_required('accounting:view')
+def export_pdf():
+    """Export Cash Book to PDF"""
+    # Get query parameters
+    start_date = request.args.get('start_date', (date.today() - timedelta(days=30)).isoformat())
+    end_date = request.args.get('end_date', date.today().isoformat())
+    account_id = request.args.get('account_id', '')
+    entry_type = request.args.get('entry_type', '')
+    
+    params = {
+        'start_date': start_date,
+        'end_date': end_date
+    }
+    if account_id:
+        params['account_id'] = account_id
+    if entry_type:
+        params['entry_type'] = entry_type
+    
+    # Get entries and summary
+    entries, status_code = api_request('GET', '/cashbook', params=params)
+    summaries, _ = api_request('GET', '/cashbook/summary', params=params)
+    
+    if status_code != 200:
+        entries = []
+    
+    business = {
+        'name': session.get('business_name', 'Company'),
+        'branch': session.get('selected_branch_name', 'Main Branch')
+    }
+    
+    currency = session.get('branch_currency', '$')
+    
+    html = render_template('cashbook/pdf/cashbook_pdf.html',
+                          entries=entries or [],
+                          summaries=summaries or [],
+                          business=business,
+                          start_date=start_date,
+                          end_date=end_date,
+                          currency=currency,
+                          now=datetime.now())
+    
+    pdf = HTML(string=html).write_pdf()
+    
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=cashbook_{start_date}_to_{end_date}.pdf'
+    return response
+
+
+@cashbook_bp.route('/export/excel')
+@login_required
+@permission_required('accounting:view')
+def export_excel():
+    """Export Cash Book to Excel"""
+    # Get query parameters
+    start_date = request.args.get('start_date', (date.today() - timedelta(days=30)).isoformat())
+    end_date = request.args.get('end_date', date.today().isoformat())
+    account_id = request.args.get('account_id', '')
+    entry_type = request.args.get('entry_type', '')
+    
+    params = {
+        'start_date': start_date,
+        'end_date': end_date
+    }
+    if account_id:
+        params['account_id'] = account_id
+    if entry_type:
+        params['entry_type'] = entry_type
+    
+    # Get entries and summary
+    entries, status_code = api_request('GET', '/cashbook', params=params)
+    summaries, _ = api_request('GET', '/cashbook/summary', params=params)
+    
+    if status_code != 200:
+        entries = []
+    
+    currency = session.get('branch_currency', '$')
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cash Book"
+    
+    title_font = Font(bold=True, size=16)
+    header_font = Font(bold=True, size=12)
+    currency_format = '#,##0.00'
+    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    header_font_white = Font(bold=True, color="FFFFFF")
+    receipt_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    payment_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    transfer_fill = PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid")
+    total_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws['A1'] = f"Cash Book - {session.get('business_name', 'Company')}"
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:H1')
+    
+    ws['A2'] = f"Period: {start_date} to {end_date}"
+    ws.merge_cells('A2:H2')
+    
+    row = 4
+    
+    # Account Summaries Section
+    if summaries:
+        ws.cell(row=row, column=1, value="Account Summaries").font = header_font
+        row += 1
+        
+        summary_headers = ['Account', 'Type', 'Opening Balance', 'Receipts', 'Payments', 'Closing Balance']
+        for col, header in enumerate(summary_headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = header_font_white
+            cell.fill = header_fill
+            cell.border = thin_border
+        row += 1
+        
+        for summary in summaries:
+            ws.cell(row=row, column=1, value=summary.get('account_name')).border = thin_border
+            ws.cell(row=row, column=2, value=summary.get('account_type')).border = thin_border
+            ws.cell(row=row, column=3, value=summary.get('opening_balance')).number_format = currency_format
+            ws.cell(row=row, column=3).border = thin_border
+            ws.cell(row=row, column=4, value=summary.get('total_receipts')).number_format = currency_format
+            ws.cell(row=row, column=4).border = thin_border
+            ws.cell(row=row, column=5, value=summary.get('total_payments')).number_format = currency_format
+            ws.cell(row=row, column=5).border = thin_border
+            ws.cell(row=row, column=6, value=summary.get('closing_balance')).number_format = currency_format
+            ws.cell(row=row, column=6).border = thin_border
+            row += 1
+        
+        row += 2
+    
+    # Entries Section
+    ws.cell(row=row, column=1, value="Cash Book Entries").font = header_font
+    row += 1
+    
+    entry_headers = ['Entry #', 'Date', 'Type', 'Account', 'Description', 'Payee/Payer', 'Amount', 'Source']
+    for col, header in enumerate(entry_headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = header_font_white
+        cell.fill = header_fill
+        cell.border = thin_border
+    row += 1
+    
+    total_receipts = 0
+    total_payments = 0
+    
+    for entry in (entries or []):
+        entry_type_val = entry.get('entry_type', '')
+        
+        ws.cell(row=row, column=1, value=entry.get('entry_number')).border = thin_border
+        ws.cell(row=row, column=2, value=entry.get('entry_date')).border = thin_border
+        
+        type_cell = ws.cell(row=row, column=3, value=entry_type_val.title())
+        type_cell.border = thin_border
+        if entry_type_val == 'receipt':
+            type_cell.fill = receipt_fill
+        elif entry_type_val == 'payment':
+            type_cell.fill = payment_fill
+        else:
+            type_cell.fill = transfer_fill
+        
+        ws.cell(row=row, column=4, value=entry.get('account_name', '-')).border = thin_border
+        ws.cell(row=row, column=5, value=entry.get('description', '-')).border = thin_border
+        ws.cell(row=row, column=6, value=entry.get('payee_payer', '-')).border = thin_border
+        
+        amount = entry.get('amount', 0)
+        amount_cell = ws.cell(row=row, column=7, value=amount)
+        amount_cell.number_format = currency_format
+        amount_cell.border = thin_border
+        
+        source = entry.get('source_type', 'Manual')
+        ws.cell(row=row, column=8, value=source.replace('_', ' ').title() if source else 'Manual').border = thin_border
+        
+        # Track totals
+        if entry_type_val == 'receipt':
+            total_receipts += amount
+        elif entry_type_val == 'payment':
+            total_payments += amount
+        
+        row += 1
+    
+    # Totals row
+    row += 1
+    ws.cell(row=row, column=5, value="Total Receipts:").font = Font(bold=True)
+    ws.cell(row=row, column=6, value=total_receipts).number_format = currency_format
+    ws.cell(row=row, column=6).font = Font(bold=True)
+    ws.cell(row=row, column=6).fill = receipt_fill
+    row += 1
+    
+    ws.cell(row=row, column=5, value="Total Payments:").font = Font(bold=True)
+    ws.cell(row=row, column=6, value=total_payments).number_format = currency_format
+    ws.cell(row=row, column=6).font = Font(bold=True)
+    ws.cell(row=row, column=6).fill = payment_fill
+    row += 1
+    
+    ws.cell(row=row, column=5, value="Net Cash Flow:").font = Font(bold=True, size=12)
+    net_flow = total_receipts - total_payments
+    net_cell = ws.cell(row=row, column=6, value=net_flow)
+    net_cell.number_format = currency_format
+    net_cell.font = Font(bold=True, size=12)
+    net_cell.fill = total_fill
+    row += 1
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['C'].width = 10
+    ws.column_dimensions['D'].width = 20
+    ws.column_dimensions['E'].width = 30
+    ws.column_dimensions['F'].width = 20
+    ws.column_dimensions['G'].width = 15
+    ws.column_dimensions['H'].width = 15
+    
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename=cashbook_{start_date}_to_{end_date}.xlsx'
+    return response

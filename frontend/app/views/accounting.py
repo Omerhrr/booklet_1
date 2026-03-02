@@ -282,6 +282,51 @@ def trial_balance():
                           as_of_date=as_of_date)
 
 
+@bp.route('/trial-balance/export/pdf')
+@login_required
+@permission_required('reports:view')
+def trial_balance_pdf():
+    """Export Trial Balance to PDF"""
+    as_of_date = request.args.get('as_of_date')
+    
+    items = []
+    total_debit = 0
+    total_credit = 0
+    
+    if as_of_date:
+        data, status = api_request('GET', f'/accounting/reports/trial-balance?as_of_date={as_of_date}')
+        
+        if status == 200 and data:
+            items = data
+            total_debit = sum(item.get('debit', 0) for item in items)
+            total_credit = sum(item.get('credit', 0) for item in items)
+    
+    business = {
+        'name': session.get('business_name', 'Company'),
+        'branch': session.get('selected_branch_name', 'Main Branch')
+    }
+    
+    report = {
+        'accounts': items,
+        'total_debit': total_debit,
+        'total_credit': total_credit,
+        'is_balanced': abs(total_debit - total_credit) < 0.01
+    }
+    
+    html = render_template('reports/pdf/trial_balance_pdf.html',
+                          report=report,
+                          business=business,
+                          as_of_date=as_of_date,
+                          now=datetime.now())
+    
+    pdf = HTML(string=html).write_pdf()
+    
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=trial_balance_{as_of_date or date.today()}.pdf'
+    return response
+
+
 # ==================== BALANCE SHEET EXPORTS ====================
 
 @bp.route('/balance-sheet/export/pdf')
