@@ -247,6 +247,7 @@ class CashBookService:
         """
         # Get opening balance (balance before start_date)
         opening_balance = Decimal("0")
+        ledger_balance_before = Decimal("0")  # Initialize for later use
         
         # For bank accounts with stored opening balance, use it as the base
         if bank_opening_balance is not None and bank_account_id is not None:
@@ -293,17 +294,30 @@ class CashBookService:
         
         entries = query.all()
         
-        # Calculate receipts and payments, excluding opening balance entries
-        # Opening balance entries are identified by source_type = 'opening_balance'
+        # For bank accounts with stored opening balance, we need to check if the
+        # opening balance entry falls within this period and exclude it to avoid double counting
+        exclude_opening_balance = False
+        if bank_opening_balance is not None and bank_opening_balance > 0 and bank_account_id is not None:
+            # Check if opening balance entry exists in this period
+            opening_entry_in_period = any(
+                e.source_type == "opening_balance" and 
+                e.entry_type == "receipt" 
+                for e in entries
+            )
+            # If opening balance entry is in the period, we exclude it from receipts
+            # because we already included it in the opening_balance value
+            exclude_opening_balance = opening_entry_in_period and (ledger_balance_before == Decimal("0"))
+        
+        # Calculate receipts and payments
         total_receipts = sum(e.amount for e in entries if (
             e.entry_type == "receipt" or 
             (e.entry_type == "transfer" and e.transfer_direction == "in")
-        ) and e.source_type != "opening_balance")
+        ) and (not exclude_opening_balance or e.source_type != "opening_balance"))
         
         total_payments = sum(e.amount for e in entries if (
             e.entry_type == "payment" or 
             (e.entry_type == "transfer" and e.transfer_direction == "out")
-        ) and e.source_type != "opening_balance")
+        ))
         
         closing_balance = opening_balance + total_receipts - total_payments
         
