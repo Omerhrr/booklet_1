@@ -5,6 +5,16 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from datetime import date
 from app import api_request, login_required, permission_required
 
+
+def safe_float(value, default=0.0):
+    """Safely convert form value to float, handling empty strings."""
+    if value is None or value == '':
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
 bp = Blueprint('expenses', __name__, url_prefix='/expenses')
 
 
@@ -85,8 +95,8 @@ def new_expense():
         'expense_date': request.form.get('expense_date'),
         'category': request.form.get('category'),
         'description': request.form.get('description'),
-        'sub_total': float(request.form.get('sub_total', 0)),
-        'vat_amount': float(request.form.get('vat_amount', 0)),
+        'sub_total': safe_float(request.form.get('sub_total')),
+        'vat_amount': safe_float(request.form.get('vat_amount')),
         'paid_from_account_id': int(request.form.get('paid_from_account_id')),
         'expense_account_id': int(request.form.get('expense_account_id')),
         'vendor_id': int(request.form.get('vendor_id')) if request.form.get('vendor_id') else None
@@ -157,8 +167,8 @@ def edit_expense(expense_id):
         'expense_date': request.form.get('expense_date'),
         'category': request.form.get('category'),
         'description': request.form.get('description'),
-        'sub_total': float(request.form.get('sub_total', 0)),
-        'vat_amount': float(request.form.get('vat_amount', 0)),
+        'sub_total': safe_float(request.form.get('sub_total')),
+        'vat_amount': safe_float(request.form.get('vat_amount')),
         'paid_from_account_id': int(request.form.get('paid_from_account_id')),
         'expense_account_id': int(request.form.get('expense_account_id')),
         'vendor_id': int(request.form.get('vendor_id')) if request.form.get('vendor_id') else None
