@@ -230,26 +230,11 @@ class CashBookService:
     
     def get_account_summary(self, account_id: int, account_name: str,
                            account_type: str, branch_id: int,
-                           start_date: date = None, end_date: date = None,
-                           bank_account_id: int = None,
-                           bank_opening_balance: Decimal = None) -> Dict:
-        """Get summary for a specific account
-        
-        Args:
-            account_id: Chart of Account ID
-            account_name: Display name for the account
-            account_type: 'bank' or 'cash'
-            branch_id: Branch ID filter
-            start_date: Start date for the period
-            end_date: End date for the period
-            bank_account_id: Optional BankAccount ID for filtering ledger entries
-            bank_opening_balance: Optional opening balance from BankAccount record (unused now)
-        """
-        # Get opening balance (balance before start_date from ledger)
+                           start_date: date = None, end_date: date = None) -> Dict:
+        """Get summary for a specific account"""
+        # Get opening balance
         opening_balance = Decimal("0")
-        
         if start_date:
-            # Query ledger entries before start_date
             query = self.db.query(
                 func.sum(LedgerEntry.debit - LedgerEntry.credit)
             ).filter(
@@ -258,9 +243,6 @@ class CashBookService:
             )
             if branch_id:
                 query = query.filter(LedgerEntry.branch_id == branch_id)
-            if bank_account_id:
-                query = query.filter(LedgerEntry.bank_account_id == bank_account_id)
-            
             opening_balance = query.scalar() or Decimal("0")
         
         # Get entries for the period
@@ -276,16 +258,10 @@ class CashBookService:
         
         entries = query.all()
         
-        # Calculate receipts and payments from all entries
-        total_receipts = sum(e.amount for e in entries if (
-            e.entry_type == "receipt" or 
-            (e.entry_type == "transfer" and e.transfer_direction == "in")
-        ))
-        
-        total_payments = sum(e.amount for e in entries if (
-            e.entry_type == "payment" or 
-            (e.entry_type == "transfer" and e.transfer_direction == "out")
-        ))
+        total_receipts = sum(e.amount for e in entries if e.entry_type == "receipt" or 
+                           (e.entry_type == "transfer" and e.transfer_direction == "in"))
+        total_payments = sum(e.amount for e in entries if e.entry_type == "payment" or 
+                           (e.entry_type == "transfer" and e.transfer_direction == "out"))
         
         closing_balance = opening_balance + total_receipts - total_payments
         
@@ -321,9 +297,7 @@ class CashBookService:
                     "bank",
                     branch_id or ba.branch_id,
                     start_date,
-                    end_date,
-                    bank_account_id=ba.id,
-                    bank_opening_balance=ba.opening_balance
+                    end_date
                 )
                 summaries.append(summary)
         
