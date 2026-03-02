@@ -374,7 +374,7 @@
         <!-- Header -->
         <header class="sticky top-0 z-30 flex items-center justify-between p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b dark:border-gray-700">
             <!-- Sidebar Toggle Button -->
-            <button @click="sidebarCollapsed = !sidebarCollapsed" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+            <button @click="sidebarCollapsed = !sidebarCollapsed; $dispatch('sidebar-toggle')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
                 <svg x-show="!sidebarCollapsed" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
                 </svg>

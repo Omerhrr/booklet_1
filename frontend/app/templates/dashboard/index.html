@@ -504,6 +504,31 @@
             expenseChart.resize();
         });
         
+        // Listen for sidebar toggle event (from dashboard_layout.html)
+        window.addEventListener('sidebar-toggle', function() {
+            // Wait for CSS transition to complete (300ms) plus a buffer
+            setTimeout(function() {
+                salesChart.resize();
+                expenseChart.resize();
+            }, 350);
+        });
+        
+        // Use ResizeObserver to handle container size changes
+        const resizeObserver = new ResizeObserver(function() {
+            // Debounce the resize to avoid too many calls during transition
+            clearTimeout(window.chartResizeTimeout);
+            window.chartResizeTimeout = setTimeout(function() {
+                salesChart.resize();
+                expenseChart.resize();
+            }, 150);
+        });
+        
+        // Observe the chart containers' parent elements for size changes
+        const salesChartContainer = document.getElementById('salesChart').parentElement;
+        const expenseChartContainer = document.getElementById('expenseChart').parentElement;
+        resizeObserver.observe(salesChartContainer);
+        resizeObserver.observe(expenseChartContainer);
+        
         // Period selector handlers
         document.getElementById('salesChartPeriod').addEventListener('change', function() {
             const days = this.value;
