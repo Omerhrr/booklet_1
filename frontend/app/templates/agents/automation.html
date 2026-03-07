@@ -1,0 +1,152 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('agents.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Agents</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">Automation Agent</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Automation Agent</h1>
+            <p class="text-gray-500 dark:text-gray-400">Runs automated tasks like bad debt analysis and depreciation</p>
+        </div>
+        <div class="flex gap-2">
+            <form method="POST" action="{{ url_for('agents.run_automation') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+                    <i class="fas fa-play mr-2"></i> Run Now
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Status Card -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800 mb-6">
+        <div class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Current Status</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {% if config.is_enabled %}
+                        <span class="text-green-600 dark:text-green-400"><i class="fas fa-check-circle mr-1"></i> Enabled</span>
+                        {% else %}
+                        <span class="text-gray-500"><i class="fas fa-pause-circle mr-1"></i> Disabled</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Last Run</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ config.last_run_at[:16] | replace('T', ' ') if config.last_run_at else 'Never' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <div class="flex items-center mb-4">
+                <div class="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+                </div>
+                <h3 class="ml-3 text-lg font-semibold text-gray-900 dark:text-white">Bad Debt Analysis</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                Checks for overdue invoices over 90 days and flags potential bad debts for write-off consideration.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <div class="flex items-center mb-4">
+                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <h3 class="ml-3 text-lg font-semibold text-gray-900 dark:text-white">Depreciation</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                Calculates and records monthly depreciation for all active fixed assets using the straight-line method.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <div class="flex items-center mb-4">
+                <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-600 dark:text-yellow-400"></i>
+                </div>
+                <h3 class="ml-3 text-lg font-semibold text-gray-900 dark:text-white">Overdue Detection</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                Scans pending invoices past their due date and updates status to 'overdue' automatically.
+            </p>
+        </div>
+    </div>
+
+    <!-- Recent Executions -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-history mr-2 text-primary-600"></i> Execution History
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            {% if executions %}
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-4 py-3">Date</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Records Processed</th>
+                        <th class="px-4 py-3">Issues Found</th>
+                        <th class="px-4 py-3">Summary</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exec in executions %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <td class="px-4 py-3">{{ exec.started_at[:16] | replace('T', ' ') if exec.started_at else '-' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if exec.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif exec.status == 'running' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                {% elif exec.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ exec.status }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">{{ exec.records_processed }}</td>
+                        <td class="px-4 py-3">
+                            {% if exec.records_flagged > 0 %}
+                            <span class="text-red-600 dark:text-red-400 font-medium">{{ exec.records_flagged }}</span>
+                            {% else %}
+                            <span class="text-green-600 dark:text-green-400">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 max-w-xs truncate">{{ exec.result_summary or '-' }}</td>
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('agents.execution_detail', execution_id=exec.id) }}" class="text-primary-600 hover:underline">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-robot text-4xl mb-3"></i>
+                <p>No executions yet. Click "Run Now" to start.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

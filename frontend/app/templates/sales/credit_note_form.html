@@ -1,0 +1,159 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}Create Credit Note{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Create Credit Note</h2>
+            <p class="text-gray-500 dark:text-gray-400">Process return for Invoice {{ invoice.get('invoice_number', '') }}</p>
+        </div>
+        <a href="{{ url_for('sales.view_invoice', invoice_id=invoice.get('id')) }}" class="inline-flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+            </svg>
+            Back to Invoice
+        </a>
+    </div>
+
+    <form method="POST" action="{{ url_for('sales.create_credit_note', invoice_id=invoice.get('id')) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Items Section -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Items to Return</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Product</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Original Qty</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Return Qty</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Price</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                {% for item in (invoice.get('items') or []) %}
+                                {% if item is mapping %}
+                                <tr class="text-gray-700 dark:text-gray-300">
+                                    <td class="px-4 py-3">
+                                        {{ item.get('product_name', 'N/A') }}
+                                        <input type="hidden" name="items[{{ loop.index0 }}][item_id]" value="{{ item.get('id') }}">
+                                        <input type="hidden" name="items[{{ loop.index0 }}][product_id]" value="{{ item.get('product_id') }}">
+                                        <input type="hidden" name="items[{{ loop.index0 }}][price]" value="{{ item.get('price', 0) }}">
+                                        <input type="hidden" class="item-original-qty" data-index="{{ loop.index0 }}" value="{{ item.get('quantity', 0) }}">
+                                    </td>
+                                    <td class="px-4 py-3 text-right">{{ item.get('quantity', 0) }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        <input type="number" name="items[{{ loop.index0 }}][quantity]" 
+                                               class="w-20 text-right bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white return-qty"
+                                               min="0" max="{{ item.get('quantity', 0) }}" value="0" 
+                                               data-price="{{ item.get('price', 0) }}" data-index="{{ loop.index0 }}">
+                                    </td>
+                                    <td class="px-4 py-3 text-right">{{ item.get('price', 0) | currency }}</td>
+                                    <td class="px-4 py-3 text-right item-total" data-index="{{ loop.index0 }}">₦0.00</td>
+                                </tr>
+                                {% endif %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No items</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details Section -->
+            <div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Credit Note Details</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Customer</label>
+                            <p class="text-gray-700 dark:text-gray-300">{{ invoice.get('customer_name', 'N/A') }}</p>
+                        </div>
+                        
+                        <div>
+                            <label for="credit_note_date" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Credit Note Date</label>
+                            <input type="date" name="credit_note_date" id="credit_note_date" value="{{ today }}" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label for="reason" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Reason</label>
+                            <select name="reason" id="reason" 
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="Invoice Return">Invoice Return</option>
+                                <option value="Damaged Goods">Damaged Goods</option>
+                                <option value="Wrong Item">Wrong Item</option>
+                                <option value="Quality Issue">Quality Issue</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-500 dark:text-gray-400">Total Credit:</span>
+                                <span id="totalCredit" class="font-bold text-gray-900 dark:text-white">₦0.00</span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-500 dark:hover:bg-primary-600">
+                            Create Credit Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const returnQtyInputs = document.querySelectorAll('.return-qty');
+    const itemTotals = document.querySelectorAll('.item-total');
+    const totalCreditEl = document.getElementById('totalCredit');
+    
+    function formatCurrency(amount) {
+        return '₦' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    function calculateTotals() {
+        let grandTotal = 0;
+        
+        returnQtyInputs.forEach(input => {
+            const index = input.dataset.index;
+            const price = parseFloat(input.dataset.price) || 0;
+            const qty = parseFloat(input.value) || 0;
+            const total = price * qty;
+            
+            // Update item total
+            const itemTotal = document.querySelector(`.item-total[data-index="${index}"]`);
+            if (itemTotal) {
+                itemTotal.textContent = formatCurrency(total);
+            }
+            
+            grandTotal += total;
+        });
+        
+        // Update grand total
+        totalCreditEl.textContent = formatCurrency(grandTotal);
+    }
+    
+    returnQtyInputs.forEach(input => {
+        input.addEventListener('input', calculateTotals);
+    });
+});
+</script>
+{% endblock %}

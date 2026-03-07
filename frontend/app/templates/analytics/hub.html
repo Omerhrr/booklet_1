@@ -1,0 +1,240 @@
+{% extends "dashboard_layout.html" %}
+
+{% block head %}
+<script>
+async function toggleFavorite(analysisId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    try {
+        const response = await fetch(`/analytics/analyses/${analysisId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update the star icon
+            const starIcon = document.getElementById(`star-${analysisId}`);
+            if (starIcon) {
+                if (result.is_favorite) {
+                    starIcon.className = 'fas fa-star text-yellow-500 cursor-pointer';
+                } else {
+                    starIcon.className = 'far fa-star text-gray-400 cursor-pointer hover:text-yellow-500';
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Failed to toggle favorite:', e);
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Analytics Hub</h1>
+            <p class="text-gray-500 dark:text-gray-400">Analyze your business data with powerful visualizations</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('analytics.query_builder') }}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+                <i class="fas fa-plus mr-2"></i> New Analysis
+            </a>
+            <a href="{{ url_for('analytics.new_dashboard') }}" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-th-large mr-2"></i> New Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg dark:bg-blue-900">
+                    <i class="fas fa-database text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Data Sources</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ sources|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 rounded-lg dark:bg-green-900">
+                    <i class="fas fa-chart-bar text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Analyses</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ analyses|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-purple-100 rounded-lg dark:bg-purple-900">
+                    <i class="fas fa-th-large text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Dashboards</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ dashboards|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-orange-100 rounded-lg dark:bg-orange-900">
+                    <i class="fas fa-star text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Favorites</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ analyses|selectattr('is_favorite')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Data Sources -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-database mr-2 text-primary-600"></i> Data Sources
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-2">
+                        {% for source in sources %}
+                        <a href="{{ url_for('analytics.query_builder', source=source.id) }}" class="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                    {% if source.id == 'sales' %}bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400
+                                    {% elif source.id == 'purchases' %}bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400
+                                    {% elif source.id == 'inventory' %}bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400
+                                    {% elif source.id == 'cashbook' %}bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400
+                                    {% elif source.id == 'expenses' %}bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400
+                                    {% elif source.id == 'payroll' %}bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400
+                                    {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">
+                                    <i class="fas 
+                                        {% if source.id == 'sales' %}fa-shopping-cart
+                                        {% elif source.id == 'purchases' %}fa-truck
+                                        {% elif source.id == 'inventory' %}fa-boxes
+                                        {% elif source.id == 'cashbook' %}fa-money-bill-wave
+                                        {% elif source.id == 'expenses' %}fa-receipt
+                                        {% elif source.id == 'payroll' %}fa-users
+                                        {% elif source.id == 'ledger' %}fa-book
+                                        {% elif source.id == 'fixed_assets' %}fa-building
+                                        {% elif source.id == 'customers' %}fa-user-tie
+                                        {% elif source.id == 'vendors' %}fa-handshake
+                                        {% else %}fa-table{% endif %}"></i>
+                                </div>
+                                <span class="ml-3 text-gray-900 dark:text-white font-medium">{{ source.name }}</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </a>
+                        {% else %}
+                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">No data sources available</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Analyses & Dashboards -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Analyses -->
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-chart-bar mr-2 text-primary-600"></i> Recent Analyses
+                    </h2>
+                    <a href="{{ url_for('analytics.saved_analyses') }}" class="text-sm text-primary-600 hover:underline">View All</a>
+                </div>
+                <div class="p-4">
+                    {% if analyses %}
+                    <div class="space-y-3">
+                        {% for analysis in analyses[:5] %}
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-primary-500 dark:hover:border-primary-600 transition-colors">
+                            <div class="flex items-center flex-1">
+                                <div class="w-8 h-8 rounded flex items-center justify-center
+                                    {% if analysis.chart_type == 'bar' %}bg-blue-100 text-blue-600
+                                    {% elif analysis.chart_type == 'line' %}bg-green-100 text-green-600
+                                    {% elif analysis.chart_type == 'pie' %}bg-purple-100 text-purple-600
+                                    {% elif analysis.chart_type == 'table' %}bg-gray-100 text-gray-600
+                                    {% else %}bg-orange-100 text-orange-600{% endif %}">
+                                    <i class="fas 
+                                        {% if analysis.chart_type == 'bar' %}fa-chart-bar
+                                        {% elif analysis.chart_type == 'line' %}fa-chart-line
+                                        {% elif analysis.chart_type == 'pie' %}fa-chart-pie
+                                        {% elif analysis.chart_type == 'table' %}fa-table
+                                        {% else %}fa-chart-area{% endif %}"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-gray-900 dark:text-white font-medium">{{ analysis.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ analysis.data_source|title }} · {{ analysis.chart_type|title }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i id="star-{{ analysis.id }}" 
+                                   onclick="toggleFavorite({{ analysis.id }}, event)"
+                                   class="{% if analysis.is_favorite %}fas fa-star text-yellow-500{% else %}far fa-star text-gray-400 hover:text-yellow-500{% endif %} cursor-pointer text-lg"></i>
+                                <a href="{{ url_for('analytics.view_analysis', analysis_id=analysis.id) }}" 
+                                   class="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">
+                                    Open
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-chart-bar text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No analyses yet</p>
+                        <a href="{{ url_for('analytics.query_builder') }}" class="text-primary-600 hover:underline text-sm">Create your first analysis</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dashboards -->
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-th-large mr-2 text-primary-600"></i> Dashboards
+                    </h2>
+                    <a href="{{ url_for('analytics.list_dashboards') }}" class="text-sm text-primary-600 hover:underline">View All</a>
+                </div>
+                <div class="p-4">
+                    {% if dashboards %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {% for dashboard in dashboards[:4] %}
+                        <a href="{{ url_for('analytics.view_dashboard', dashboard_id=dashboard.id) }}" class="p-4 rounded-lg border border-gray-200 hover:border-primary-500 hover:bg-primary-50 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-medium text-gray-900 dark:text-white">{{ dashboard.name }}</h3>
+                                {% if dashboard.is_default %}
+                                <span class="px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded dark:bg-primary-900 dark:text-primary-300">Default</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ dashboard.widget_count }} widgets</p>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-th-large text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No dashboards yet</p>
+                        <a href="{{ url_for('analytics.new_dashboard') }}" class="text-primary-600 hover:underline text-sm">Create your first dashboard</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

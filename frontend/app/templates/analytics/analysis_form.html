@@ -1,0 +1,341 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ (analysis or {}).get('name', 'New Analysis') }}</h1>
+            <p class="text-gray-500 dark:text-gray-400">{{ 'Edit analysis configuration' if analysis else 'Create a new data analysis' }}</p>
+        </div>
+    </div>
+
+    <form method="POST" id="analysisForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Basic Info -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Basic Info -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Basic Information</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                            <input type="text" name="name" value="{{ (analysis or {}).get('name', '') }}" required
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                            <textarea name="description" rows="3"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">{{ (analysis or {}).get('description', '') }}</textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data Source *</label>
+                            <select name="data_source" id="dataSourceSelect" required onchange="loadFields()"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" {% if analysis %}disabled{% endif %}>
+                                {% for source in sources %}
+                                <option value="{{ source.get('id') }}" {% if (analysis or {}).get('data_source') == source.get('id') or data_source == source.get('id') %}selected{% endif %}>{{ source.get('name') }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chart Type</label>
+                            <select name="chart_type"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                                <option value="table" {% if (analysis or {}).get('chart_type') == 'table' %}selected{% endif %}>Table</option>
+                                <option value="bar" {% if (analysis or {}).get('chart_type') == 'bar' %}selected{% endif %}>Bar Chart</option>
+                                <option value="line" {% if (analysis or {}).get('chart_type') == 'line' %}selected{% endif %}>Line Chart</option>
+                                <option value="pie" {% if (analysis or {}).get('chart_type') == 'pie' %}selected{% endif %}>Pie Chart</option>
+                                <option value="area" {% if (analysis or {}).get('chart_type') == 'area' %}selected{% endif %}>Area Chart</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_shared" id="is_shared" {% if (analysis or {}).get('is_shared') %}checked{% endif %}
+                                class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <label for="is_shared" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Share with team</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden fields for JSON data -->
+                <input type="hidden" name="columns" id="columnsInput" value="{{ (analysis or {}).get('columns', []) | tojson }}">
+                <input type="hidden" name="filters" id="filtersInput" value="{{ (analysis or {}).get('filters', 'null') | tojson }}">
+                <input type="hidden" name="group_by" id="groupByInput" value="{{ (analysis or {}).get('group_by', 'null') | tojson }}">
+                <input type="hidden" name="aggregations" id="aggregationsInput" value="{{ (analysis or {}).get('aggregations', 'null') | tojson }}">
+                <input type="hidden" name="order_by" id="orderByInput" value="{{ (analysis or {}).get('order_by', 'null') | tojson }}">
+                <input type="hidden" name="chart_config" id="chartConfigInput" value="{{ (analysis or {}).get('chart_config', 'null') | tojson }}">
+                
+                <!-- Actions -->
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+                        {{ 'Update' if analysis else 'Create' }} Analysis
+                    </button>
+                    <a href="{{ url_for('analytics.saved_analyses') }}" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Right Column: Query Builder -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Query Builder</h2>
+                    
+                    <!-- Columns Selection -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Columns</h3>
+                        <div id="columnsContainer" class="grid grid-cols-3 gap-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Group By -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Group By</h3>
+                        <div id="groupByContainer" class="grid grid-cols-3 gap-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Aggregations -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aggregations</h3>
+                        <div id="aggregationsContainer">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Filters</h3>
+                            <button type="button" onclick="addFilter()" class="text-sm text-primary-600 hover:underline">
+                                <i class="fas fa-plus mr-1"></i> Add Filter
+                            </button>
+                        </div>
+                        <div id="filtersContainer" class="space-y-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Button -->
+                    <div class="flex justify-end">
+                        <button type="button" onclick="previewQuery()" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                            <i class="fas fa-play mr-2"></i> Preview
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Preview Results -->
+                <div id="previewContainer" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6 hidden">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Preview Results</h2>
+                    <div id="previewResults" class="overflow-x-auto">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+const fields = {{ fields | tojson | safe }};
+const existingColumns = {{ (analysis or {}).get('columns', []) | tojson | safe }};
+const existingFilters = {{ (analysis or {}).get('filters', []) | tojson | safe }};
+const existingGroupBy = {{ (analysis or {}).get('group_by', []) | tojson | safe }};
+const existingAggregations = {{ (analysis or {}).get('aggregations', {}) | tojson | safe }};
+
+function loadFields() {
+    const sourceId = document.getElementById('dataSourceSelect').value;
+    renderFields();
+}
+
+function renderFields() {
+    const dimensions = fields.dimensions || [];
+    const measures = fields.measures || [];
+    const dateFields = fields.date_fields || [];
+    const allFields = [...dimensions, ...measures, ...dateFields];
+    
+    // Render columns
+    const columnsContainer = document.getElementById('columnsContainer');
+    columnsContainer.innerHTML = allFields.map(f => `
+        <label class="inline-flex items-center">
+            <input type="checkbox" class="column-checkbox" value="${f.id}" 
+                ${existingColumns.includes(f.id) ? 'checked' : ''}
+                onchange="updateColumns()">
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">${f.label}</span>
+        </label>
+    `).join('');
+    
+    // Render group by (only dimensions and date fields)
+    const groupByContainer = document.getElementById('groupByContainer');
+    groupByContainer.innerHTML = [...dimensions, ...dateFields].map(f => `
+        <label class="inline-flex items-center">
+            <input type="checkbox" class="groupby-checkbox" value="${f.id}"
+                ${(existingGroupBy || []).includes(f.id) ? 'checked' : ''}
+                onchange="updateGroupBy()">
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">${f.label}</span>
+        </label>
+    `).join('');
+    
+    // Render aggregations (only measures)
+    const aggregationsContainer = document.getElementById('aggregationsContainer');
+    aggregationsContainer.innerHTML = measures.map(f => `
+        <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm text-gray-700 dark:text-gray-300 w-32">${f.label}</span>
+            <select class="aggregation-select text-sm rounded-lg border border-gray-300 p-1.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                data-field="${f.id}" onchange="updateAggregations()">
+                <option value="">None</option>
+                <option value="sum" ${(existingAggregations || {})[f.id] === 'sum' ? 'selected' : ''}>Sum</option>
+                <option value="avg" ${(existingAggregations || {})[f.id] === 'avg' ? 'selected' : ''}>Average</option>
+                <option value="count" ${(existingAggregations || {})[f.id] === 'count' ? 'selected' : ''}>Count</option>
+                <option value="min" ${(existingAggregations || {})[f.id] === 'min' ? 'selected' : ''}>Min</option>
+                <option value="max" ${(existingAggregations || {})[f.id] === 'max' ? 'selected' : ''}>Max</option>
+            </select>
+        </div>
+    `).join('');
+}
+
+function updateColumns() {
+    const selected = Array.from(document.querySelectorAll('.column-checkbox:checked')).map(cb => cb.value);
+    document.getElementById('columnsInput').value = JSON.stringify(selected);
+}
+
+function updateGroupBy() {
+    const selected = Array.from(document.querySelectorAll('.groupby-checkbox:checked')).map(cb => cb.value);
+    document.getElementById('groupByInput').value = selected.length ? JSON.stringify(selected) : 'null';
+}
+
+function updateAggregations() {
+    const aggs = {};
+    document.querySelectorAll('.aggregation-select').forEach(sel => {
+        if (sel.value) {
+            aggs[sel.dataset.field] = sel.value;
+        }
+    });
+    document.getElementById('aggregationsInput').value = Object.keys(aggs).length ? JSON.stringify(aggs) : 'null';
+}
+
+function addFilter() {
+    const container = document.getElementById('filtersContainer');
+    const filterId = Date.now();
+    const allFieldOptions = (fields.dimensions || []).concat(fields.measures || []).concat(fields.date_fields || []);
+    const filterHtml = `
+        <div class="filter-row flex items-center gap-2 p-2 bg-gray-50 rounded-lg dark:bg-gray-700" id="filter-${filterId}">
+            <select class="filter-field text-sm rounded border border-gray-300 bg-white p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white" onchange="updateFilters()">
+                <option value="">Select Field</option>
+                ${allFieldOptions.map(f => `<option value="${f.id}">${f.label}</option>`).join('')}
+            </select>
+            <select class="filter-operator text-sm rounded border border-gray-300 bg-white p-2 dark:bg-gray-600 dark:border-gray-500 dark:text-white" onchange="updateFilters()">
+                <option value="eq">Equals</option>
+                <option value="ne">Not Equals</option>
+                <option value="gt">Greater Than</option>
+                <option value="gte">Greater or Equal</option>
+                <option value="lt">Less Than</option>
+                <option value="lte">Less or Equal</option>
+                <option value="like">Contains</option>
+                <option value="in">In List</option>
+            </select>
+            <input type="text" class="filter-value text-sm rounded border border-gray-300 bg-white p-2 flex-1 dark:bg-gray-600 dark:border-gray-500 dark:text-white" placeholder="Value" onchange="updateFilters()">
+            <button type="button" onclick="removeFilter(${filterId})" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', filterHtml);
+}
+
+function removeFilter(filterId) {
+    document.getElementById(`filter-${filterId}`).remove();
+    updateFilters();
+}
+
+function updateFilters() {
+    const filters = [];
+    document.querySelectorAll('.filter-row').forEach(row => {
+        const field = row.querySelector('.filter-field').value;
+        const operator = row.querySelector('.filter-operator').value;
+        const value = row.querySelector('.filter-value').value;
+        if (field && value) {
+            filters.push({ field, operator, value });
+        }
+    });
+    document.getElementById('filtersInput').value = filters.length ? JSON.stringify(filters) : 'null';
+}
+
+async function previewQuery() {
+    updateColumns();
+    updateGroupBy();
+    updateAggregations();
+    updateFilters();
+    
+    const form = document.getElementById('analysisForm');
+    const formData = new FormData(form);
+    const data = {
+        data_source: formData.get('data_source'),
+        columns: JSON.parse(formData.get('columns') || '[]'),
+        filters: JSON.parse(formData.get('filters') || 'null'),
+        group_by: JSON.parse(formData.get('group_by') || 'null'),
+        aggregations: JSON.parse(formData.get('aggregations') || 'null'),
+        limit: 20
+    };
+    
+    try {
+        const response = await fetch('{{ url_for("analytics.execute_query") }}', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showPreview(result.results);
+        } else {
+            alert('Error: ' + (result.error || 'Query failed'));
+        }
+    } catch (e) {
+        alert('Error executing query: ' + e.message);
+    }
+}
+
+function showPreview(results) {
+    const container = document.getElementById('previewContainer');
+    const resultsDiv = document.getElementById('previewResults');
+    
+    if (!results || results.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No results</p>';
+    } else {
+        const keys = Object.keys(results[0]);
+        resultsDiv.innerHTML = `
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        ${keys.map(k => `<th class="px-4 py-2">${k}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${results.map(row => `
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                            ${keys.map(k => `<td class="px-4 py-2">${row[k] !== null ? row[k] : '-'}</td>`).join('')}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    container.classList.remove('hidden');
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', renderFields);
+</script>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">PAYSLIP</div>
+<div class="report-period">{{ payslip.payslip_number or 'N/A' }}</div>
+
+<!-- Employee Info -->
+<div class="summary-box" style="margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+        <div style="width: 48%;">
+            <div class="summary-row">
+                <span class="summary-label">Employee:</span>
+                <span class="summary-value">{{ payslip.employee.full_name if payslip.employee else 'N/A' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Department:</span>
+                <span class="summary-value">{{ payslip.employee.department if payslip.employee else 'N/A' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Position:</span>
+                <span class="summary-value">{{ payslip.employee.position if payslip.employee else 'N/A' }}</span>
+            </div>
+        </div>
+        <div style="width: 48%;">
+            <div class="summary-row">
+                <span class="summary-label">Pay Period:</span>
+                <span class="summary-value">{{ payslip.pay_period_start or 'N/A' }} to {{ payslip.pay_period_end or 'N/A' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Payslip #:</span>
+                <span class="summary-value">{{ payslip.payslip_number or 'N/A' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Status:</span>
+                <span class="summary-value">
+                    {% if payslip.status == 'paid' %}
+                        <span class="badge badge-success">PAID</span>
+                    {% else %}
+                        <span class="badge badge-warning">{{ payslip.status|upper }}</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Earnings -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 12px; color: #059669; border-bottom: 1px solid #ccc; padding-bottom: 5px;">EARNINGS</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60%;">Description</th>
+                <th style="width: 40%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic Salary</td>
+                <td class="text-right">{{ "%.2f"|format(payslip.basic_salary|float) if payslip.basic_salary else "0.00" }}</td>
+            </tr>
+            <tr>
+                <td>Allowances</td>
+                <td class="text-right">{{ "%.2f"|format(payslip.allowances|float) if payslip.allowances else "0.00" }}</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>Gross Salary</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(payslip.gross_salary|float) if payslip.gross_salary else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Deductions -->
+<div class="section">
+    <h3 style="margin: 15px 0 10px 0; font-size: 12px; color: #dc2626; border-bottom: 1px solid #ccc; padding-bottom: 5px;">DEDUCTIONS</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60%;">Description</th>
+                <th style="width: 40%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>PAYE (Income Tax)</td>
+                <td class="text-right">{{ "%.2f"|format(payslip.paye_deduction|float) if payslip.paye_deduction else "0.00" }}</td>
+            </tr>
+            <tr>
+                <td>Pension (Employee)</td>
+                <td class="text-right">{{ "%.2f"|format(payslip.pension_employee|float) if payslip.pension_employee else "0.00" }}</td>
+            </tr>
+            <tr>
+                <td>Other Deductions</td>
+                <td class="text-right">{{ "%.2f"|format(payslip.other_deductions|float) if payslip.other_deductions else "0.00" }}</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>Total Deductions</strong></td>
+                <td class="text-right"><strong>{{ "%.2f"|format(payslip.total_deductions|float) if payslip.total_deductions else "0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Net Pay -->
+<div class="summary-box" style="margin-top: 20px; background-color: #f0fdf4; border: 2px solid #059669;">
+    <div class="summary-row" style="font-size: 14px;">
+        <span class="summary-label" style="font-weight: bold;">NET PAY:</span>
+        <span class="summary-value" style="font-size: 18px; color: #059669;">
+            {{ "%.2f"|format(payslip.net_salary|float) if payslip.net_salary else "0.00" }}
+        </span>
+    </div>
+</div>
+
+<!-- Employer Contributions -->
+{% if payslip.pension_employer and payslip.pension_employer > 0 %}
+<div class="section" style="margin-top: 15px;">
+    <h3 style="margin: 10px 0; font-size: 11px; color: #666;">EMPLOYER CONTRIBUTIONS</h3>
+    <table>
+        <tbody>
+            <tr>
+                <td style="width: 60%;">Pension (Employer)</td>
+                <td class="text-right">{{ "%.2f"|format(payslip.pension_employer|float) }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if payslip.paid_date %}
+<div style="margin-top: 20px; font-size: 10px; color: #666;">
+    Payment Date: {{ payslip.paid_date }}
+</div>
+{% endif %}
+{% endblock %}

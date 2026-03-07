@@ -1,0 +1,103 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">VAT Report</div>
+<div class="report-period">Period: {{ start_date or 'All Time' }} {% if end_date %}to {{ end_date }}{% endif %}</div>
+
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">VAT Collected (Sales):</span>
+        <span class="summary-value amount-positive">{{ "%.2f"|format(report.vat_collected|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">VAT Paid (Purchases):</span>
+        <span class="summary-value">{{ "%.2f"|format(report.vat_paid_purchases|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">VAT Paid (Expenses):</span>
+        <span class="summary-value">{{ "%.2f"|format(report.vat_paid_expenses|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total VAT Paid:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_vat_paid|float) }}</span>
+    </div>
+    <div class="summary-row" style="border-top: 1px solid #ccc; padding-top: 8px; margin-top: 8px;">
+        <span class="summary-label">Net VAT:</span>
+        <span class="summary-value {% if report.net_vat >= 0 %}amount-positive{% else %}amount-negative{% endif %}">
+            {{ "%.2f"|format(report.net_vat|float) }}
+        </span>
+    </div>
+    {% if report.vat_payable > 0 %}
+    <div class="summary-row">
+        <span class="summary-label">VAT Payable:</span>
+        <span class="summary-value amount-negative">{{ "%.2f"|format(report.vat_payable|float) }}</span>
+    </div>
+    {% endif %}
+    {% if report.vat_receivable > 0 %}
+    <div class="summary-row">
+        <span class="summary-label">VAT Receivable:</span>
+        <span class="summary-value amount-positive">{{ "%.2f"|format(report.vat_receivable|float) }}</span>
+    </div>
+    {% endif %}
+</div>
+
+{% if report.sales_with_vat %}
+<h3>Sales with VAT</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th class="text-right">Sub Total</th>
+            <th class="text-right">VAT</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for inv in report.sales_with_vat %}
+        <tr>
+            <td>{{ inv.invoice_number }}</td>
+            <td>{{ inv.date }}</td>
+            <td>{{ inv.customer or '-' }}</td>
+            <td class="text-right">{{ "%.2f"|format(inv.sub_total|float) }}</td>
+            <td class="text-right">{{ "%.2f"|format(inv.vat_amount|float) }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="4" class="text-right">Total VAT Collected:</td>
+            <td class="text-right">{{ "%.2f"|format(report.vat_collected|float) }}</td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+
+{% if report.purchases_with_vat %}
+<h3>Purchases with VAT</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Bill #</th>
+            <th>Date</th>
+            <th>Vendor</th>
+            <th class="text-right">Sub Total</th>
+            <th class="text-right">VAT</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for bill in report.purchases_with_vat %}
+        <tr>
+            <td>{{ bill.bill_number }}</td>
+            <td>{{ bill.date }}</td>
+            <td>{{ bill.vendor or '-' }}</td>
+            <td class="text-right">{{ "%.2f"|format(bill.sub_total|float) }}</td>
+            <td class="text-right">{{ "%.2f"|format(bill.vat_amount|float) }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="4" class="text-right">Total VAT on Purchases:</td>
+            <td class="text-right">{{ "%.2f"|format(report.vat_paid_purchases|float) }}</td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

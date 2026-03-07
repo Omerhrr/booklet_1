@@ -1,0 +1,89 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Aging Report</div>
+<div class="report-period">As of: {{ now.strftime('%Y-%m-%d') }}</div>
+
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">Total Receivables:</span>
+        <span class="summary-value">{{ "%.2f"|format(aging.receivables.total|default(0)|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total Payables:</span>
+        <span class="summary-value">{{ "%.2f"|format(aging.payables.total|default(0)|float) }}</span>
+    </div>
+</div>
+
+<h3>Receivables Aging</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Period</th>
+            <th class="text-right">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Current</td>
+            <td class="text-right">{{ "%.2f"|format(aging.receivables.current|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>1-30 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.receivables.days_30|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>31-60 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.receivables.days_60|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>61-90 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.receivables.days_90|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>Over 90 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.receivables.over_90|default(0)|float) }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total</td>
+            <td class="text-right">{{ "%.2f"|format(aging.receivables.total|default(0)|float) }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Payables Aging</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Period</th>
+            <th class="text-right">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Current</td>
+            <td class="text-right">{{ "%.2f"|format(aging.payables.current|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>1-30 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.payables.days_30|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>31-60 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.payables.days_60|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>61-90 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.payables.days_90|default(0)|float) }}</td>
+        </tr>
+        <tr>
+            <td>Over 90 Days</td>
+            <td class="text-right">{{ "%.2f"|format(aging.payables.over_90|default(0)|float) }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total</td>
+            <td class="text-right">{{ "%.2f"|format(aging.payables.total|default(0)|float) }}</td>
+        </tr>
+    </tbody>
+</table>
+{% endblock %}

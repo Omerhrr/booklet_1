@@ -1,0 +1,103 @@
+{% extends "reports/pdf/base_pdf.html" %}
+
+{% block content %}
+<div class="report-title">Inventory Report</div>
+<div class="report-period">As of: {{ now.strftime('%Y-%m-%d') }}</div>
+
+<div class="summary-box">
+    <div class="summary-row">
+        <span class="summary-label">Total Products:</span>
+        <span class="summary-value">{{ report.total_products|default(0) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Total Value:</span>
+        <span class="summary-value">{{ "%.2f"|format(report.total_value|float) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Low Stock Items:</span>
+        <span class="summary-value amount-negative">{{ report.low_stock_count|default(0) }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Out of Stock:</span>
+        <span class="summary-value amount-negative">{{ report.out_of_stock_count|default(0) }}</span>
+    </div>
+</div>
+
+{% if report.low_stock %}
+<h3>Low Stock Alert</h3>
+<table>
+    <thead>
+        <tr>
+            <th>SKU</th>
+            <th>Product</th>
+            <th class="text-right">Quantity</th>
+            <th class="text-right">Reorder Level</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for prod in report.low_stock %}
+        <tr>
+            <td>{{ prod.sku or '-' }}</td>
+            <td>{{ prod.name }}</td>
+            <td class="text-right">{{ "%.2f"|format(prod.quantity|float) }}</td>
+            <td class="text-right">{{ "%.2f"|format(prod.reorder_level|float) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if report.out_of_stock %}
+<h3>Out of Stock</h3>
+<table>
+    <thead>
+        <tr>
+            <th>SKU</th>
+            <th>Product</th>
+            <th>Category</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for prod in report.out_of_stock %}
+        <tr>
+            <td>{{ prod.sku or '-' }}</td>
+            <td>{{ prod.name }}</td>
+            <td>{{ prod.category or '-' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if report.products %}
+<h3>All Products</h3>
+<table>
+    <thead>
+        <tr>
+            <th>SKU</th>
+            <th>Product</th>
+            <th>Category</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Price</th>
+            <th class="text-right">Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for prod in report.products %}
+        <tr>
+            <td>{{ prod.sku or '-' }}</td>
+            <td>{{ prod.name }}</td>
+            <td>{{ prod.category or '-' }}</td>
+            <td class="text-right">{{ "%.2f"|format(prod.quantity|float) }}</td>
+            <td class="text-right">{{ "%.2f"|format(prod.purchase_price|float) }}</td>
+            <td class="text-right">{{ "%.2f"|format(prod.value|float) }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="5" class="text-right">Total Value:</td>
+            <td class="text-right">{{ "%.2f"|format(report.total_value|float) }}</td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

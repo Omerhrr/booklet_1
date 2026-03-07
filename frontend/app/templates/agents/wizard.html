@@ -1,0 +1,353 @@
+{% extends "dashboard_layout.html" %}
+
+{% block extra_head %}
+<style>
+    .wizard-chat {
+        height: calc(100vh - 280px);
+        min-height: 400px;
+    }
+    .wizard-message {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+    .wizard-message.user {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+    .wizard-message.assistant {
+        background: #f3f4f6;
+        color: #1f2937;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+    .dark .wizard-message.assistant {
+        background: #374151;
+        color: #f9fafb;
+    }
+    .suggested-action {
+        transition: all 0.2s;
+    }
+    .suggested-action:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('agents.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Agents</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">Doc Wizard</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Doc Wizard</h1>
+            <p class="text-gray-500 dark:text-gray-400">Your guide to fixing accounting and data issues</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+        <!-- Sidebar: Recent Sessions -->
+        <div class="col-span-3">
+            <div class="bg-white rounded-lg shadow h-full dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="font-semibold text-gray-900 dark:text-white">Recent Sessions</h2>
+                </div>
+                <div class="overflow-y-auto" style="max-height: calc(100vh - 350px);">
+                    {% if sessions %}
+                    {% for s in sessions %}
+                    <div class="p-4 cursor-pointer border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                         onclick="loadSession({{ s.id }})">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                    {{ s.issue_type | title if s.issue_type else 'General Issue' }}
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {{ s.created_at[:10] if s.created_at else '' }}
+                                </p>
+                            </div>
+                            {% if s.resolved %}
+                            <span class="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded dark:bg-green-900 dark:text-green-200">
+                                Resolved
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+                        <p class="text-sm">No previous sessions</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <button onclick="startNewSession()" class="w-full text-primary-600 hover:text-primary-700 text-sm font-medium">
+                        <i class="fas fa-plus mr-2"></i> New Session
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="col-span-9">
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 dark:text-white" id="chatTitle">Doc Wizard</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Ready to help you resolve issues</p>
+                        </div>
+                        <select id="issueType" class="text-sm rounded-lg border border-gray-300 bg-gray-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select issue type...</option>
+                            <option value="sales_vs_purchase">Sales vs Purchase Mistake</option>
+                            <option value="duplicate_entry">Duplicate Entry</option>
+                            <option value="wrong_account">Wrong Account Posting</option>
+                            <option value="reconciliation_issue">Reconciliation Issue</option>
+                            <option value="other">Other Issue</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="wizard-chat overflow-y-auto p-4" id="messagesContainer">
+                    <!-- Welcome message -->
+                    <div class="text-center py-8" id="welcomeMessage">
+                        <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-magic text-3xl text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Hello! I'm the Doc Wizard</h3>
+                        <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+                            I can help you resolve accounting issues and data mistakes. Tell me what happened, and I'll guide you through fixing it.
+                        </p>
+                        <div class="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+                            <button onclick="quickStart('sales_vs_purchase')" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Sales vs Purchase</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Recorded wrong direction</p>
+                            </button>
+                            <button onclick="quickStart('duplicate_entry')" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Duplicate Entry</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Created by mistake</p>
+                            </button>
+                            <button onclick="quickStart('wrong_account')" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Wrong Account</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Posted to incorrect account</p>
+                            </button>
+                            <button onclick="quickStart('reconciliation_issue')" class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Reconciliation</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Can't match records</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <form id="chatForm" class="flex gap-3">
+                        <div class="flex-1">
+                            <textarea id="messageInput" 
+                                      class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white resize-none"
+                                      placeholder="Describe your issue..." rows="2"
+                                      onkeydown="handleKeyDown(event)"></textarea>
+                        </div>
+                        <button type="submit" id="sendButton"
+                                class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 transition self-end">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSessionId = null;
+let isLoading = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('chatForm');
+    form.addEventListener('submit', handleSubmit);
+});
+
+function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        handleSubmit(event);
+    }
+}
+
+function quickStart(issueType) {
+    document.getElementById('issueType').value = issueType;
+    
+    const descriptions = {
+        'sales_vs_purchase': "I recorded a transaction in the wrong direction - I created a sales invoice when it should have been a purchase (or vice versa).",
+        'duplicate_entry': "I accidentally created a duplicate entry in the system.",
+        'wrong_account': "I posted a transaction to the wrong account and need to correct it.",
+        'reconciliation_issue': "I'm having trouble reconciling my bank statement with my records."
+    };
+    
+    document.getElementById('messageInput').value = descriptions[issueType] || '';
+    document.getElementById('welcomeMessage').style.display = 'none';
+    handleSubmit(new Event('submit'));
+}
+
+async function handleSubmit(event) {
+    event.preventDefault();
+    
+    if (isLoading) return;
+    
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to UI
+    addMessage(message, 'user');
+    
+    // Clear input
+    input.value = '';
+    
+    // Show loading
+    isLoading = true;
+    document.getElementById('sendButton').disabled = true;
+    
+    try {
+        let response;
+        
+        if (!currentSessionId) {
+            // Create new session
+            const issueType = document.getElementById('issueType').value;
+            const createResponse = await fetch('/agents/wizard/session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    issue_type: issueType,
+                    description: message,
+                    csrf_token: '{{ csrf_token() }}'
+                })
+            });
+            
+            const data = await createResponse.json();
+            
+            if (data.success) {
+                currentSessionId = data.session_id;
+                addMessage(data.guidance, 'assistant', data.suggested_actions);
+            } else {
+                addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+            }
+        } else {
+            // Add message to existing session
+            const msgResponse = await fetch(`/agents/wizard/session/${currentSessionId}/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: message })
+            });
+            
+            const data = await msgResponse.json();
+            
+            if (data.message) {
+                addMessage(data.message.content, 'assistant', data.message.suggested_actions);
+            } else {
+                addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+            }
+        }
+    } catch (error) {
+        console.error('Wizard error:', error);
+        addMessage('Failed to connect to the wizard. Please try again.', 'assistant');
+    }
+    
+    isLoading = false;
+    document.getElementById('sendButton').disabled = false;
+}
+
+function addMessage(content, role, suggestedActions = null) {
+    const container = document.getElementById('messagesContainer');
+    const div = document.createElement('div');
+    div.className = `wizard-message ${role}`;
+    
+    // Format content
+    let formattedContent = content;
+    formattedContent = formattedContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    formattedContent = formattedContent.replace(/\n/g, '<br>');
+    
+    div.innerHTML = formattedContent;
+    container.appendChild(div);
+    
+    // Add suggested actions if provided
+    if (suggestedActions && suggestedActions.length > 0) {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'mt-3 flex flex-wrap gap-2';
+        
+        suggestedActions.forEach(action => {
+            const btn = document.createElement('button');
+            btn.className = 'suggested-action px-3 py-2 text-sm bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-500 text-gray-700 dark:text-gray-200';
+            btn.innerHTML = `<i class="fas ${action.action === 'navigate' ? 'fa-external-link-alt' : 'fa-cog'} mr-2"></i>${action.label}`;
+            btn.onclick = () => handleAction(action);
+            actionsDiv.appendChild(btn);
+        });
+        
+        div.appendChild(actionsDiv);
+    }
+    
+    container.scrollTop = container.scrollHeight;
+}
+
+function handleAction(action) {
+    if (action.action === 'navigate') {
+        window.location.href = action.path;
+    } else if (action.action === 'analyze') {
+        document.getElementById('messageInput').value = 'Please run the duplicate check analysis for me.';
+        handleSubmit(new Event('submit'));
+    }
+}
+
+async function loadSession(sessionId) {
+    try {
+        const response = await fetch(`/agents/wizard/session/${sessionId}`);
+        const data = await response.json();
+        
+        if (data.session) {
+            currentSessionId = sessionId;
+            
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            document.getElementById('welcomeMessage').style.display = 'none';
+            
+            // Load messages
+            if (data.session.messages) {
+                data.session.messages.forEach(msg => {
+                    addMessage(msg.content, msg.role, msg.suggested_actions);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load session:', error);
+    }
+}
+
+function startNewSession() {
+    currentSessionId = null;
+    const container = document.getElementById('messagesContainer');
+    container.innerHTML = '';
+    document.getElementById('welcomeMessage').style.display = 'block';
+    document.getElementById('issueType').value = '';
+}
+</script>
+{% endblock %}

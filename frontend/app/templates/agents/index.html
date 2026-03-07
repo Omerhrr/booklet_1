@@ -1,0 +1,206 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Intelligent Agents</h1>
+            <p class="text-gray-500 dark:text-gray-400">Automate tasks, audit records, and get guidance</p>
+        </div>
+        <a href="{{ url_for('agents.settings') }}" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+            <i class="fas fa-cog mr-2"></i> Settings
+        </a>
+    </div>
+
+    {% set automation_config = none %}
+    {% set audit_config = none %}
+    {% for config in configurations %}
+        {% if config.agent_type == 'automation' %}
+            {% set automation_config = config %}
+        {% elif config.agent_type == 'audit' %}
+            {% set audit_config = config %}
+        {% endif %}
+    {% endfor %}
+
+    <!-- Agent Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Automation Agent -->
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-2xl text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Automation Agent</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Runs automated tasks</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    Handles bad debt analysis, depreciation calculations, and overdue detection automatically.
+                </p>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs px-2 py-1 rounded-full {% if automation_config and automation_config.is_enabled %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                        {% if automation_config and automation_config.is_enabled %}Active{% else %}Inactive{% endif %}
+                    </span>
+                    <a href="{{ url_for('agents.automation') }}" class="text-primary-600 hover:underline text-sm font-medium">
+                        Manage <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Agent -->
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-search-dollar text-2xl text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Audit Agent</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Comprehensive auditing</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    Checks records across branches, finds discrepancies, generates PDF reports, and sends email notifications.
+                </p>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs px-2 py-1 rounded-full {% if audit_config and audit_config.is_enabled %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                        {% if audit_config and audit_config.is_enabled %}Active{% else %}Inactive{% endif %}
+                    </span>
+                    <a href="{{ url_for('agents.audit') }}" class="text-primary-600 hover:underline text-sm font-medium">
+                        Manage <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doc Wizard -->
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-magic text-2xl text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Doc Wizard</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Issue resolution guide</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    Interactive guide that helps you fix accounting mistakes and data issues with step-by-step instructions.
+                </p>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Always Available
+                    </span>
+                    <a href="{{ url_for('agents.wizard') }}" class="text-primary-600 hover:underline text-sm font-medium">
+                        Launch <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Executions -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800 mb-6">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-history mr-2 text-primary-600"></i> Recent Executions
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            {% if executions %}
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-4 py-3">Agent</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Started</th>
+                        <th class="px-4 py-3">Records</th>
+                        <th class="px-4 py-3">Findings</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exec in executions %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <td class="px-4 py-3">
+                            <span class="capitalize font-medium">{{ exec.agent_type }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if exec.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif exec.status == 'running' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                {% elif exec.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ exec.status }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">{{ exec.started_at[:16] | replace('T', ' ') if exec.started_at else '-' }}</td>
+                        <td class="px-4 py-3">{{ exec.records_processed }}</td>
+                        <td class="px-4 py-3">
+                            {% if exec.records_flagged > 0 %}
+                            <span class="text-red-600 dark:text-red-400 font-medium">{{ exec.records_flagged }}</span>
+                            {% else %}
+                            <span class="text-green-600 dark:text-green-400">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('agents.execution_detail', execution_id=exec.id) }}" class="text-primary-600 hover:underline">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-clock text-3xl mb-3"></i>
+                <p>No executions yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Open Findings -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-exclamation-triangle mr-2 text-yellow-600"></i> Open Findings
+            </h2>
+            <a href="{{ url_for('agents.findings') }}" class="text-sm text-primary-600 hover:underline">View All</a>
+        </div>
+        {% if findings %}
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for finding in findings %}
+            <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 text-xs rounded
+                                {% if finding.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% elif finding.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                {% elif finding.severity == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ finding.severity }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ finding.finding_type }}</span>
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ finding.title }}</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ finding.description[:100] }}{% if finding.description | length > 100 %}...{% endif %}</p>
+                    </div>
+                    <a href="{{ url_for('agents.findings') }}" class="text-primary-600 hover:underline text-sm ml-4">Details</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-check-circle text-3xl mb-3 text-green-500"></i>
+            <p>No open findings</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

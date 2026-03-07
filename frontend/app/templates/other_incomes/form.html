@@ -1,0 +1,198 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}{{ 'New Other Income' if not income else 'Edit Other Income' }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+            <a href="{{ url_for('other_incomes.list_other_incomes') }}" class="hover:text-primary-600 dark:hover:text-primary-500">Other Income</a>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ 'New Income' if not income else 'Edit Income' }}</span>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ 'Record New Income' if not income else 'Edit Income' }}
+        </h1>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" action="{{ url_for('other_incomes.new_other_income') if not income else url_for('other_incomes.edit_other_income', income_id=income.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Income Details -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Income Details</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="income_number" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Income Number
+                            </label>
+                            <input type="text" id="income_number" value="{{ income.income_number if income else next_number }}"
+                                   class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400" readonly>
+                        </div>
+                        
+                        <div>
+                            <label for="income_date" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Income Date *
+                            </label>
+                            <input type="date" name="income_date" id="income_date" required
+                                   value="{{ income.income_date if income else today }}"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Category *
+                            </label>
+                            <input type="text" name="category" id="category" required list="category_list"
+                                   value="{{ income.category if income else '' }}"
+                                   placeholder="e.g., Interest Income, Rental Income"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <datalist id="category_list">
+                                {% for cat in categories %}
+                                <option value="{{ cat }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        
+                        <div>
+                            <label for="customer_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Customer
+                            </label>
+                            <select name="customer_id" id="customer_id"
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Customer (Optional)</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" {% if income and income.customer_id == customer.id %}selected{% endif %}>
+                                    {{ customer.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Description
+                            </label>
+                            <textarea name="description" id="description" rows="2"
+                                      placeholder="Enter income description..."
+                                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">{{ income.description if income else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Amount Details -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Amount Details</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="sub_total" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Sub Total *
+                            </label>
+                            <input type="number" name="sub_total" id="sub_total" required step="0.01" min="0"
+                                   value="{{ income.sub_total if income else '0.00' }}"
+                                   onchange="calculateTotal()"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label for="vat_amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                VAT Amount
+                            </label>
+                            <input type="number" name="vat_amount" id="vat_amount" step="0.01" min="0"
+                                   value="{{ income.vat_amount if income else '0.00' }}"
+                                   onchange="calculateTotal()"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label for="total_amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Total Amount
+                            </label>
+                            <input type="text" id="total_amount" readonly
+                                   value="{{ income.amount if income else '0.00' }}"
+                                   class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white font-bold">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Account Selection -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Details</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="received_in_account_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Received In *
+                            </label>
+                            <select name="received_in_account_id" id="received_in_account_id" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Account</option>
+                                {% for account in payment_accounts %}
+                                <option value="{{ account.id }}" {% if income and income.received_in_account_id == account.id %}selected{% endif %}>
+                                    {{ account.name }} ({{ account.type|title }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Account to receive funds</p>
+                        </div>
+                        
+                        <div>
+                            <label for="income_account_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Income Account *
+                            </label>
+                            <select name="income_account_id" id="income_account_id" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Income Account</option>
+                                {% for account in income_accounts %}
+                                <option value="{{ account.id }}" {% if income and income.income_account_id == account.id %}selected{% endif %}>
+                                    {{ account.code }} - {{ account.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Revenue account to record income</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="space-y-3">
+                        <button type="submit" 
+                                class="w-full text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+                            {{ 'Record Income' if not income else 'Update Income' }}
+                        </button>
+                        <a href="{{ url_for('other_incomes.list_other_incomes') }}"
+                           class="w-full text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 text-center block">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function calculateTotal() {
+    const subTotal = parseFloat(document.getElementById('sub_total').value) || 0;
+    const vatAmount = parseFloat(document.getElementById('vat_amount').value) || 0;
+    const total = subTotal + vatAmount;
+    document.getElementById('total_amount').value = total.toFixed(2);
+}
+
+// Calculate on page load
+document.addEventListener('DOMContentLoaded', calculateTotal);
+</script>
+{% endblock %}
