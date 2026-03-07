@@ -10,7 +10,7 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.rate_limit import RateLimitMiddleware
-from app.api.v1 import auth, dashboard, crm, inventory, sales, settings as settings_router, purchases, accounting, hr, banking, expenses, other_incomes, reports, budgets, fixed_assets, cashbook, fiscal_year, reconciliation, audit, analytics, ai, agents
+from app.api.v1 import auth, dashboard, crm, inventory, sales, settings as settings_router, purchases, accounting, hr, banking, expenses, other_incomes, reports, budgets, fixed_assets, cashbook, fiscal_year, reconciliation, audit, analytics, ai, agents, saas
 from app.services.permission_service import seed_permissions
 from app.core.database import SessionLocal
 
@@ -100,6 +100,7 @@ app.include_router(audit.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(agents.router, prefix="/api/v1")
+app.include_router(saas.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

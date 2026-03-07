@@ -2077,3 +2077,138 @@ __all__ = [
     # Agents
     'AgentConfiguration', 'AgentExecution', 'AgentFinding', 'DocWizardSession', 'DocWizardMessage',
 ]
+
+
+# ==================== SAAS MODELS ====================
+
+class SubscriptionPlan(Base):
+    """Subscription plans for SaaS"""
+    __tablename__ = 'subscription_plans'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)
+    slug = Column(String(50), unique=True, nullable=False)
+    max_branches = Column(Integer, default=1)
+    max_users = Column(Integer, default=5)
+    includes_agents = Column(Boolean, default=False)
+    monthly_price = Column(Numeric(10, 2), default=Decimal("0.00"))
+    yearly_price = Column(Numeric(10, 2), default=Decimal("0.00"))
+    features = Column(Text, nullable=True)  # JSON list of features
+    is_active = Column(Boolean, default=True)
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Subscription(Base):
+    """Business subscription"""
+    __tablename__ = 'subscriptions'
+    
+    id = Column(Integer, primary_key=True)
+    business_id = Column(Integer, ForeignKey('businesses.id', ondelete='CASCADE'), nullable=False, unique=True)
+    plan_id = Column(Integer, ForeignKey('subscription_plans.id', ondelete='SET NULL'), nullable=True)
+    status = Column(String(20), default='active')  # active, cancelled, past_due, trialing
+    billing_cycle = Column(String(20), default='monthly')
+    current_period_start = Column(Date, nullable=True)
+    current_period_end = Column(Date, nullable=True)
+    cancel_at_period_end = Column(Boolean, default=False)
+    stripe_subscription_id = Column(String(255), nullable=True)
+    stripe_customer_id = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    business = relationship("Business", backref="subscription")
+    plan = relationship("SubscriptionPlan", backref="subscriptions")
+
+
+class PaymentHistory(Base):
+    """Payment history for subscriptions"""
+    __tablename__ = 'payment_history'
+    
+    id = Column(Integer, primary_key=True)
+    subscription_id = Column(Integer, ForeignKey('subscriptions.id', ondelete='CASCADE'), nullable=False)
+    amount = Column(Numeric(10, 2), default=Decimal("0.00"))
+    currency = Column(String(3), default='USD')
+    status = Column(String(20), default='pending')  # succeeded, failed, pending, refunded
+    payment_method = Column(String(50), nullable=True)
+    stripe_payment_intent_id = Column(String(255), nullable=True)
+    invoice_url = Column(String(500), nullable=True)
+    invoice_pdf = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    subscription = relationship("Subscription", backref="payments")
+
+
+class BlogPost(Base):
+    """Blog post for website"""
+    __tablename__ = 'blog_posts'
+    
+    id = Column(Integer, primary_key=True)
+    title = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True, nullable=False)
+    excerpt = Column(Text, nullable=True)
+    content = Column(Text, nullable=True)
+    featured_image = Column(String(500), nullable=True)
+    author_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    category = Column(String(100), nullable=True)
+    tags = Column(Text, nullable=True)  # JSON list
+    is_published = Column(Boolean, default=False)
+    published_at = Column(DateTime, nullable=True)
+    view_count = Column(Integer, default=0)
+    meta_title = Column(String(255), nullable=True)
+    meta_description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    author = relationship("User", backref="blog_posts")
+
+
+class WebsiteContent(Base):
+    """Website content sections"""
+    __tablename__ = 'website_contents'
+    
+    id = Column(Integer, primary_key=True)
+    section = Column(String(100), nullable=False)  # hero, features, testimonials, etc.
+    key = Column(String(100), nullable=False)
+    content = Column(Text, nullable=True)  # JSON content
+    is_active = Column(Boolean, default=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        UniqueConstraint('section', 'key', name='uq_section_key'),
+    )
+
+
+class ContactSubmission(Base):
+    """Contact form submissions"""
+    __tablename__ = 'contact_submissions'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    subject = Column(String(255), nullable=True)
+    message = Column(Text, nullable=False)
+    status = Column(String(20), default='new')  # new, read, replied, closed
+    replied_at = Column(DateTime, nullable=True)
+    replied_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    reply_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    replier = relationship("User", backref="contact_replies")
+
+
+class WebsiteUser(Base):
+    """Website admin users"""
+    __tablename__ = 'website_users'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    is_website_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", backref="website_profile")
