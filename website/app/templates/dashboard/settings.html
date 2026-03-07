@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Dashboard Header -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center space-x-4">
+                <a href="{{ url_for('dashboard.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Manage your account preferences and security.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="space-y-6">
+            <!-- Profile Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Information</h3>
+                <form method="POST" action="{{ url_for('dashboard.settings') }}" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Full Name
+                            </label>
+                            <input type="text" id="name" name="name" value="{{ account.name if account else session.get('name', '') }}"
+                                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Email Address
+                            </label>
+                            <input type="email" id="email" name="email" value="{{ account.email if account else session.get('email', '') }}"
+                                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Change Password -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change Password</h3>
+                <form method="POST" action="{{ url_for('dashboard.change_password') }}" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div>
+                        <label for="current_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Current Password
+                        </label>
+                        <input type="password" id="current_password" name="current_password" required
+                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="new_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                New Password
+                            </label>
+                            <input type="password" id="new_password" name="new_password" required minlength="8"
+                                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="confirm_new_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Confirm New Password
+                            </label>
+                            <input type="password" id="confirm_new_password" name="confirm_new_password" required
+                                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-200 dark:border-red-900 p-6">
+                <h3 class="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">Danger Zone</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    Deleting your account is permanent. All your data, including your business data, will be permanently deleted.
+                </p>
+                <button type="button" onclick="alert('Account deletion is disabled for demo purposes.')" class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50">
+                    Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

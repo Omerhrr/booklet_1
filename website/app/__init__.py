@@ -1,7 +1,7 @@
 """
 Booklet SaaS Website - Marketing, Registration, Billing
 """
-from flask import Flask, session, g, request, redirect, url_for, flash, jsonify
+from flask import Flask, session, g, request, redirect, url_for, flash, jsonify, current_app
 from flask_bcrypt import Bcrypt
 import httpx
 import os
@@ -216,9 +216,6 @@ def validate_csrf_token(token):
     """Validate CSRF token"""
     return token == session.get('_csrf_token')
 
-
-# For templates
-from flask import current_app
 
 # Create a Flask app instance for the module level functions
 app = create_app()

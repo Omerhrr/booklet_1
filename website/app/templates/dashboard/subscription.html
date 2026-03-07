@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Dashboard Header -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center space-x-4">
+                <a href="{{ url_for('dashboard.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Subscription</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Manage your subscription and plan.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Current Plan -->
+        {% if current_subscription and current_subscription.plan %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Your Current Plan</h3>
+                    <p class="text-gray-600 dark:text-gray-400">You are currently on the {{ current_subscription.plan.name }} plan.</p>
+                </div>
+                <span class="px-3 py-1 text-sm font-medium rounded-full {% if current_subscription.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+                    {{ current_subscription.status|title }}
+                </span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Plan</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ current_subscription.plan.name }}</p>
+                </div>
+                <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Billing Cycle</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ current_subscription.billing_cycle|title }}</p>
+                </div>
+                <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Next Billing</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        ${{ current_subscription.plan.yearly_price if current_subscription.billing_cycle == 'yearly' else current_subscription.plan.monthly_price }}
+                    </p>
+                </div>
+                <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Renewal Date</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        {{ current_subscription.current_period_end|date if current_subscription.current_period_end else 'N/A' }}
+                    </p>
+                </div>
+            </div>
+            
+            {% if current_subscription.cancel_at_period_end %}
+            <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <p class="text-yellow-800 dark:text-yellow-300">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Your subscription will end on {{ current_subscription.current_period_end|date }}. You can reactivate anytime before then.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Available Plans -->
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Available Plans</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for plan in plans %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border {% if current_subscription and current_subscription.plan and current_subscription.plan.slug == plan.slug %}border-blue-500 ring-2 ring-blue-500{% else %}border-gray-200 dark:border-gray-700{% endif %} overflow-hidden">
+                {% if current_subscription and current_subscription.plan and current_subscription.plan.slug == plan.slug %}
+                <div class="bg-blue-600 text-white text-center py-2 text-sm font-medium">
+                    Current Plan
+                </div>
+                {% endif %}
+                
+                <div class="p-6">
+                    <div class="text-center mb-6">
+                        <h4 class="text-xl font-bold text-gray-900 dark:text-white">{{ plan.name }}</h4>
+                        <div class="mt-2">
+                            <span class="text-3xl font-bold text-gray-900 dark:text-white">${{ plan.monthly_price }}</span>
+                            <span class="text-gray-500">/month</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">
+                            ${{ plan.yearly_price }}/year (save 17%)
+                        </p>
+                    </div>
+                    
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            {{ plan.max_branches }} branch{% if plan.max_branches > 1 %}es{% endif %}
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Up to {{ plan.max_users }} users
+                        </li>
+                        {% if plan.includes_agents %}
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            AI Agents included
+                        </li>
+                        {% endif %}
+                        {% for feature in plan.features[:3] %}
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            {{ feature }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    {% if current_subscription and current_subscription.plan and current_subscription.plan.slug == plan.slug %}
+                    <button disabled class="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed">
+                        Current Plan
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('dashboard.upgrade', plan=plan.slug) }}" class="block w-full py-2 px-4 text-center {% if plan.slug == 'enterprise' %}bg-gray-900 dark:bg-white text-white dark:text-gray-900{% else %}bg-blue-600 text-white{% endif %} rounded-lg hover:opacity-90">
+                        {% if current_subscription %}Switch{% else %}Get Started{% endif %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Cancel Subscription -->
+        {% if current_subscription and current_subscription.status == 'active' %}
+        <div class="mt-8 text-center">
+            <form method="POST" action="{{ url_for('dashboard.cancel_subscription') }}" onsubmit="return confirm('Are you sure you want to cancel your subscription? You can continue using Booklet until the end of your billing period.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-red-600 hover:text-red-700 text-sm">
+                    Cancel Subscription
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

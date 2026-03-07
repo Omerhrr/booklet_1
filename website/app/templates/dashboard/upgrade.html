@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Dashboard Header -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center space-x-4">
+                <a href="{{ url_for('dashboard.subscription') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Upgrade Plan</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Review your plan upgrade.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% if target_plan %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <!-- Plan Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+                <h2 class="text-2xl font-bold">{{ target_plan.name }} Plan</h2>
+                <p class="text-blue-100 mt-1">You're about to upgrade to this plan.</p>
+            </div>
+            
+            <div class="p-6">
+                <!-- Plan Features -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">What's included:</h3>
+                    <ul class="grid grid-cols-2 gap-2">
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            {{ target_plan.max_branches }} branches
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Up to {{ target_plan.max_users }} users
+                        </li>
+                        {% for feature in target_plan.features %}
+                        <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            {{ feature }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Billing Cycle Selection -->
+                <form method="POST" action="{{ url_for('dashboard.upgrade', plan=target_plan.slug) }}" class="space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="plan_slug" value="{{ target_plan.slug }}">
+                    
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Choose billing cycle:</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500">
+                                <div class="flex items-center">
+                                    <input type="radio" name="billing_cycle" value="monthly" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">Monthly</p>
+                                        <p class="text-sm text-gray-500">${{ target_plan.monthly_price }}/month</p>
+                                    </div>
+                                </div>
+                                <span class="text-gray-900 dark:text-white font-semibold">${{ target_plan.monthly_price }}</span>
+                            </label>
+                            
+                            <label class="flex items-center justify-between p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 relative">
+                                <div class="flex items-center">
+                                    <input type="radio" name="billing_cycle" value="yearly" class="h-4 w-4 text-blue-600 focus:ring-blue-500" checked>
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">Yearly</p>
+                                        <p class="text-sm text-gray-500">${{ target_plan.yearly_price }}/year</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Save 17%</span>
+                                    <span class="text-gray-900 dark:text-white font-semibold">${{ target_plan.yearly_price }}</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-600 dark:text-gray-400">Plan</span>
+                            <span class="text-gray-900 dark:text-white">{{ target_plan.name }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-600 dark:text-gray-400">Billing</span>
+                            <span class="text-gray-900 dark:text-white" id="billing-display">Yearly</span>
+                        </div>
+                        <hr class="my-2 border-gray-200 dark:border-gray-600">
+                        <div class="flex justify-between">
+                            <span class="font-medium text-gray-900 dark:text-white">Total</span>
+                            <span class="font-bold text-gray-900 dark:text-white" id="total-display">${{ target_plan.yearly_price }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Buttons -->
+                    <div class="flex space-x-4">
+                        <a href="{{ url_for('dashboard.subscription') }}" class="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            Cancel
+                        </a>
+                        <button type="submit" class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700">
+                            Confirm Upgrade
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <p class="text-gray-500 dark:text-gray-400 mb-4">No plan selected for upgrade.</p>
+            <a href="{{ url_for('dashboard.subscription') }}" class="text-blue-600 hover:text-blue-500">
+                View available plans →
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Update display based on billing cycle selection
+document.querySelectorAll('input[name="billing_cycle"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const billingDisplay = document.getElementById('billing-display');
+        const totalDisplay = document.getElementById('total-display');
+        
+        if (this.value === 'yearly') {
+            billingDisplay.textContent = 'Yearly';
+            totalDisplay.textContent = '${{ target_plan.yearly_price }}';
+        } else {
+            billingDisplay.textContent = 'Monthly';
+            totalDisplay.textContent = '${{ target_plan.monthly_price }}';
+        }
+    });
+});
+</script>
+{% endblock %}
