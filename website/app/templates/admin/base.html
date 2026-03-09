@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin - Booklet{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link {
+            @apply flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors;
+        }
+        .sidebar-link.active {
+            @apply bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-cyan-400 font-medium;
+        }
+        .sidebar-link i {
+            @apply w-5 text-center mr-3;
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="antialiased bg-gray-50 dark:bg-gray-900" x-data="{ sidebarOpen: true }">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="fixed top-4 right-4 z-50 space-y-2" id="flash-messages">
+            {% for category, message in messages %}
+            <div class="flex items-center p-4 mb-4 text-sm rounded-lg shadow-lg
+                {% if category == 'success' %}text-green-800 bg-green-50 dark:bg-gray-800 dark:text-green-400{% endif %}
+                {% if category == 'error' %}text-red-800 bg-red-50 dark:bg-gray-800 dark:text-red-400{% endif %}
+                {% if category == 'warning' %}text-yellow-800 bg-yellow-50 dark:bg-gray-800 dark:text-yellow-400{% endif %}
+                {% if category == 'info' %}text-blue-800 bg-blue-50 dark:bg-gray-800 dark:text-blue-400{% endif %}"
+                x-data="{ show: true }" x-show="show" x-transition>
+                <i class="fas 
+                    {% if category == 'success' %}fa-check-circle text-green-500{% endif %}
+                    {% if category == 'error' %}fa-exclamation-circle text-red-500{% endif %}
+                    {% if category == 'warning' %}fa-exclamation-triangle text-yellow-500{% endif %}
+                    {% if category == 'info' %}fa-info-circle text-blue-500{% endif %}
+                    mr-2"></i>
+                <div>{{ message }}</div>
+                <button type="button" class="ml-auto -mx-1.5 -my-1.5 rounded-lg focus:ring-2 p-1.5 inline-flex items-center justify-center h-8 w-8" @click="show = false">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0" 
+               :class="{ '-translate-x-full': !sidebarOpen }">
+            
+            <!-- Sidebar Header -->
+            <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('admin.index') }}" class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-book text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-bold dark:text-white">Admin</span>
+                </a>
+                <button @click="sidebarOpen = false" class="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Sidebar Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <a href="{{ url_for('admin.index') }}" class="sidebar-link {% if request.endpoint == 'admin.index' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                
+                <div class="pt-4 pb-2">
+                    <span class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Content</span>
+                </div>
+                
+                <a href="{{ url_for('admin.blog_list') }}" class="sidebar-link {% if 'admin.blog' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Blog Posts</span>
+                </a>
+                
+                <a href="{{ url_for('admin.content_list') }}" class="sidebar-link {% if 'admin.content' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Website Content</span>
+                </a>
+                
+                <a href="{{ url_for('admin.contacts_list') }}" class="sidebar-link {% if 'admin.contacts' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-envelope"></i>
+                    <span>Contact Submissions</span>
+                </a>
+                
+                <div class="pt-4 pb-2">
+                    <span class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Management</span>
+                </div>
+                
+                <a href="{{ url_for('admin.users_list') }}" class="sidebar-link {% if 'admin.users' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                
+                <a href="{{ url_for('admin.plans_list') }}" class="sidebar-link {% if 'admin.plans' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-tags"></i>
+                    <span>Subscription Plans</span>
+                </a>
+                
+                <div class="pt-4 pb-2">
+                    <span class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Links</span>
+                </div>
+                
+                <a href="{{ url_for('public.index') }}" target="_blank" class="sidebar-link">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>View Website</span>
+                </a>
+                
+                <a href="{{ url_for('auth.logout') }}" class="sidebar-link text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+            
+            <!-- Sidebar Footer -->
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-sky-100 dark:bg-sky-900 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-medium text-sky-600 dark:text-cyan-400">{{ session.get('name', 'A')[:1]|upper }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ session.get('name', 'Admin') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ session.get('email', '') }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden lg:ml-0">
+            <!-- Top Header -->
+            <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center px-4 lg:px-6">
+                <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                
+                <div class="flex-1">
+                    <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{% block page_title %}Admin Dashboard{% endblock %}</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('public.index') }}" target="_blank" class="text-sm text-sky-600 dark:text-cyan-400 hover:underline">
+                        <i class="fas fa-external-link-alt mr-1"></i> View Site
+                    </a>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    
+    <!-- Overlay for mobile sidebar -->
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" 
+         class="fixed inset-0 z-20 bg-black/50 lg:hidden" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+    </div>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

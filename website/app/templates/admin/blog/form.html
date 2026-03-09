@@ -1,107 +1,134 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ 'Edit Post' if post else 'New Post' }} - Admin{% endblock %}
+{% block page_title %}{{ 'Edit Post' if post else 'New Post' }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex items-center space-x-4">
-                <a href="{{ url_for('admin.blog_list') }}" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'Edit Post' if post else 'New Post' }}</h1>
-            </div>
-        </div>
+<div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('admin.blog_list') }}" class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Blog
+        </a>
     </div>
     
-    <!-- Main Content -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form method="POST" class="space-y-6">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Basic Info -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-info-circle mr-2 text-sky-500"></i>Basic Information
+            </h3>
             
-            <!-- Basic Info -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Basic Information</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                    <input type="text" id="title" name="title" value="{{ post.title if post else '' }}" required
+                           class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
                 
-                <div class="space-y-4">
+                <div>
+                    <label for="slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (URL)</label>
+                    <input type="text" id="slug" name="slug" value="{{ post.slug if post else '' }}" required
+                           class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                           placeholder="my-blog-post-title">
+                    <p class="mt-1 text-xs text-gray-500">URL-friendly version of the title. Use lowercase letters, numbers, and hyphens.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
-                        <input type="text" id="title" name="title" value="{{ post.title if post else '' }}" required
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label for="slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Slug</label>
-                        <input type="text" id="slug" name="slug" value="{{ post.slug if post else '' }}" required
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                         <input type="text" id="category" name="category" value="{{ post.category if post else '' }}"
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                               class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                               placeholder="e.g., Business, Technology">
                     </div>
                     
                     <div>
-                        <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags (comma-separated)</label>
+                        <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
                         <input type="text" id="tags" name="tags" value="{{ post.tags|join(',') if post and post.tags else '' }}"
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                               class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                               placeholder="tag1, tag2, tag3">
+                        <p class="mt-1 text-xs text-gray-500">Comma-separated list</p>
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-file-alt mr-2 text-green-500"></i>Content
+            </h3>
             
-            <!-- Content -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Content</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="excerpt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Excerpt</label>
+                    <textarea id="excerpt" name="excerpt" rows="2"
+                              class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                              placeholder="Brief summary of the post...">{{ post.excerpt if post else '' }}</textarea>
+                    <p class="mt-1 text-xs text-gray-500">A short summary displayed in post listings</p>
+                </div>
                 
-                <div class="space-y-4">
-                    <div>
-                        <label for="excerpt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Excerpt</label>
-                        <textarea id="excerpt" name="excerpt" rows="2"
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">{{ post.excerpt if post else '' }}</textarea>
-                    </div>
-                    
-                    <div>
-                        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content (HTML)</label>
-                        <textarea id="content" name="content" rows="15"
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{ post.content if post else '' }}</textarea>
-                    </div>
+                <div>
+                    <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content (Markdown/HTML)</label>
+                    <textarea id="content" name="content" rows="20"
+                              class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                              placeholder="Write your blog post content here...">{{ post.content if post else '' }}</textarea>
                 </div>
             </div>
+        </div>
+        
+        <!-- SEO -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-search mr-2 text-purple-500"></i>SEO Settings
+            </h3>
             
-            <!-- SEO -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">SEO Settings</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="meta_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Title</label>
+                    <input type="text" id="meta_title" name="meta_title" value="{{ post.meta_title if post else '' }}"
+                           class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                           placeholder="SEO title for search engines">
+                    <p class="mt-1 text-xs text-gray-500">Leave empty to use the post title</p>
+                </div>
                 
-                <div class="space-y-4">
-                    <div>
-                        <label for="meta_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meta Title</label>
-                        <input type="text" id="meta_title" name="meta_title" value="{{ post.meta_title if post else '' }}"
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label for="meta_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meta Description</label>
-                        <textarea id="meta_description" name="meta_description" rows="2"
-                            class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">{{ post.meta_description if post else '' }}</textarea>
-                    </div>
+                <div>
+                    <label for="meta_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Description</label>
+                    <textarea id="meta_description" name="meta_description" rows="2"
+                              class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                              placeholder="SEO description for search engines (150-160 characters recommended)">{{ post.meta_description if post else '' }}</textarea>
                 </div>
             </div>
+        </div>
+        
+        <!-- Publish Options -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-paper-plane mr-2 text-blue-500"></i>Publish Options
+            </h3>
             
-            <!-- Publish -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input type="checkbox" id="is_published" name="is_published" {% if post and post.is_published %}checked{% endif %}
-                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                        <label for="is_published" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Published</label>
-                    </div>
-                    <button type="submit" class="px-6 py-2 bg-sky-500 text-white rounded-lg hover:bg-blue-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input type="checkbox" id="is_published" name="is_published" {% if post and post.is_published %}checked{% endif %}
+                           class="w-4 h-4 text-sky-600 bg-gray-100 border-gray-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="is_published" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        Publish this post
+                    </label>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('admin.blog_list') }}" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-colors">
+                        <i class="fas fa-save mr-2"></i>
                         {{ 'Update Post' if post else 'Create Post' }}
                     </button>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 {% endblock %}

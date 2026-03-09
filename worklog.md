@@ -498,3 +498,18 @@ Technical Changes:
    - Use permissions directly from API (already filtered)
    - Store business_id from API response
    - Update plan_slug from API response
+
+---
+Task ID: 12
+Agent: Main Agent
+Task: Fixed website admin creation and database schema
+
+Work Log:
+- Updated User model in app/models/__init__.py: business_id is now nullable
+- Fixed create_website_admin.py to handle existing users and- Added fix_users_table.py for database migration
+- Website admins can now have NULL business_id (for managing the platform
+- This is separate from ERP business users
+
+Stage Summary:
+- Website admins can now be created without a business_id requirement
+- Created migration script for existing databases

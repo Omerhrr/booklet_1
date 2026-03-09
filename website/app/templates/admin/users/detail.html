@@ -1,0 +1,175 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ user.name or 'User' }} - Admin{% endblock %}
+{% block page_title %}User Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('admin.users_list') }}" class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Users
+        </a>
+    </div>
+    
+    <!-- User Profile Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-8">
+            <div class="flex items-center">
+                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                    <span class="text-3xl font-bold text-white">{{ (user.name or 'U')[:1]|upper }}</span>
+                </div>
+                <div class="ml-6">
+                    <h2 class="text-2xl font-bold text-white">{{ user.name or 'Unknown User' }}</h2>
+                    <p class="text-white/80">{{ user.email }}</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        {% if user.is_active %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white">
+                            <i class="fas fa-check-circle mr-1"></i> Active
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/80 text-white">
+                            <i class="fas fa-times-circle mr-1"></i> Inactive
+                        </span>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/80 text-white">
+                            <i class="fas fa-crown mr-1"></i> Admin
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Details -->
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <i class="fas fa-user mr-2 text-sky-500"></i>Account Information
+                    </h3>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Username</dt>
+                            <dd class="text-gray-900 dark:text-white">{{ user.username or 'N/A' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Email</dt>
+                            <dd class="text-gray-900 dark:text-white">{{ user.email }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Full Name</dt>
+                            <dd class="text-gray-900 dark:text-white">{{ user.name or 'N/A' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</dt>
+                            <dd class="text-gray-900 dark:text-white">{{ user.phone or 'N/A' }}</dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <i class="fas fa-building mr-2 text-green-500"></i>Business Information
+                    </h3>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Business ID</dt>
+                            <dd class="text-gray-900 dark:text-white">
+                                {% if user.business_id %}
+                                <a href="{{ url_for('admin.user_detail', user_id=user.business_id) }}" class="text-sky-600 hover:text-sky-500 dark:text-cyan-400">
+                                    #{{ user.business_id }}
+                                </a>
+                                {% else %}
+                                <span class="text-gray-400">No business</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Subscription</dt>
+                            <dd class="text-gray-900 dark:text-white">
+                                {% if user.subscription %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if user.subscription.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400{% endif %}
+                                    {% if user.subscription.status == 'past_due' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-400{% endif %}
+                                    {% if user.subscription.status == 'cancelled' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-400{% endif %}">
+                                    {{ user.subscription.status|title }}
+                                </span>
+                                <span class="ml-2 text-sm text-gray-500">{{ user.subscription.plan_name or 'Unknown' }}</span>
+                                {% else %}
+                                <span class="text-gray-400">No subscription</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <i class="fas fa-clock mr-2 text-purple-500"></i>Activity
+                    </h3>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Last Login</dt>
+                            <dd class="text-gray-900 dark:text-white">
+                                {% if user.last_login %}
+                                {{ user.last_login|date('%B %d, %Y at %I:%M %p') }}
+                                {% else %}
+                                <span class="text-gray-400">Never logged in</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Account Created</dt>
+                            <dd class="text-gray-900 dark:text-white">{{ user.created_at|date('%B %d, %Y') }}</dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <i class="fas fa-cog mr-2 text-blue-500"></i>Account Status
+                    </h3>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Account Active</dt>
+                            <dd>
+                                {% if user.is_active %}
+                                <span class="text-green-600 dark:text-green-400"><i class="fas fa-check-circle mr-1"></i> Yes</span>
+                                {% else %}
+                                <span class="text-red-600 dark:text-red-400"><i class="fas fa-times-circle mr-1"></i> No</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Superuser</dt>
+                            <dd>
+                                {% if user.is_superuser %}
+                                <span class="text-yellow-600 dark:text-yellow-400"><i class="fas fa-crown mr-1"></i> Yes</span>
+                                {% else %}
+                                <span class="text-gray-600 dark:text-gray-400">No</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="flex gap-4">
+        <a href="mailto:{{ user.email }}" class="inline-flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-colors">
+            <i class="fas fa-envelope mr-2"></i> Send Email
+        </a>
+        {% if user.business_id %}
+        <a href="{{ erp_url }}/auto-login?token={{ user.access_token or '' }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium rounded-lg transition-colors">
+            <i class="fas fa-external-link-alt mr-2"></i> View in ERP
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

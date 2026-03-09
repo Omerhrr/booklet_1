@@ -1,0 +1,165 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Contact Submissions - Admin{% endblock %}
+{% block page_title %}Contact Submissions{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-gray-600 dark:text-gray-400">Manage contact form submissions from the website.</p>
+        
+        <!-- Status Filter -->
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('admin.contacts_list') }}" 
+               class="px-3 py-1.5 text-sm rounded-lg {% if not status_filter %}bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-400{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                All
+            </a>
+            <a href="?status=new" 
+               class="px-3 py-1.5 text-sm rounded-lg {% if status_filter == 'new' %}bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-400{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                New
+            </a>
+            <a href="?status=read" 
+               class="px-3 py-1.5 text-sm rounded-lg {% if status_filter == 'read' %}bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-400{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                Read
+            </a>
+            <a href="?status=replied" 
+               class="px-3 py-1.5 text-sm rounded-lg {% if status_filter == 'replied' %}bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-400{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                Replied
+            </a>
+        </div>
+    </div>
+    
+    <!-- Submissions List -->
+    <div class="space-y-4">
+        {% for contact in submissions %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <!-- Contact Header -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-sky-100 dark:bg-sky-900 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-medium text-sky-600 dark:text-cyan-400">{{ contact.name[:1]|upper }}</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ contact.name }}</h3>
+                        <a href="mailto:{{ contact.email }}" class="text-sm text-sky-600 hover:text-sky-500 dark:text-cyan-400">{{ contact.email }}</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if contact.status == 'new' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-400{% endif %}
+                        {% if contact.status == 'read' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-400{% endif %}
+                        {% if contact.status == 'replied' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400{% endif %}">
+                        {{ contact.status|title }}
+                    </span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ contact.created_at|date }}</span>
+                </div>
+            </div>
+            
+            <!-- Contact Body -->
+            <div class="px-6 py-4">
+                {% if contact.subject %}
+                <h4 class="font-medium text-gray-900 dark:text-white mb-2">{{ contact.subject }}</h4>
+                {% endif %}
+                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ contact.message }}</p>
+            </div>
+            
+            <!-- Contact Actions -->
+            <div class="px-6 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <!-- Status Update Form -->
+                    <form method="POST" action="{{ url_for('admin.contact_status', contact_id=contact.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="status" onchange="this.form.submit()" 
+                                class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5">
+                            <option value="new" {% if contact.status == 'new' %}selected{% endif %}>New</option>
+                            <option value="read" {% if contact.status == 'read' %}selected{% endif %}>Read</option>
+                            <option value="replied" {% if contact.status == 'replied' %}selected{% endif %}>Replied</option>
+                        </select>
+                    </form>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <a href="mailto:{{ contact.email }}?subject=Re: {{ contact.subject or 'Your inquiry' }}" 
+                       class="inline-flex items-center px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                        <i class="fas fa-reply mr-1"></i> Reply via Email
+                    </a>
+                </div>
+            </div>
+            
+            {% if contact.replied_at %}
+            <div class="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
+                <p class="text-sm text-green-700 dark:text-green-400">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Replied on {{ contact.replied_at|date('%B %d, %Y at %I:%M %p') }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <i class="fas fa-inbox text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No contact submissions</h3>
+            <p class="text-gray-500 dark:text-gray-400">
+                {% if status_filter %}
+                No submissions with status "{{ status_filter }}".
+                {% else %}
+                Contact form submissions will appear here.
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-envelope text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">New</p>
+                    <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ submissions|selectattr('status', 'equalto', 'new')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-eye text-yellow-600 dark:text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Read</p>
+                    <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ submissions|selectattr('status', 'equalto', 'read')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Replied</p>
+                    <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ submissions|selectattr('status', 'equalto', 'replied')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-inbox text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total</p>
+                    <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ submissions|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
