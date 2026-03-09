@@ -1,0 +1,200 @@
+{% extends "dashboard_layout.html" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('analytics.hub') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Analytics</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">{{ analysis.get('name', 'Analysis') }}</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ analysis.get('name', 'Analysis') }}</h1>
+            {% if analysis.get('description') %}
+            <p class="text-gray-500 dark:text-gray-400">{{ analysis.get('description') }}</p>
+            {% endif %}
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('analytics.edit_analysis', analysis_id=analysis.get('id')) }}" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-edit mr-2"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    <!-- Analysis Info -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Data Source</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ analysis.get('data_source', '')|title }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Chart Type</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ analysis.get('chart_type', 'table')|title }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Rows</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ results|length }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Created</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ analysis.get('created_at', '')[:10] if analysis.get('created_at') else 'N/A' }}</p>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    {% if analysis.get('chart_type') != 'table' and results %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Visualization</h2>
+        <div class="relative" style="height: 400px;">
+            <canvas id="analysisChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Data Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Data</h2>
+            <button onclick="exportToCSV()" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-download mr-2"></i> Export CSV
+            </button>
+        </div>
+        {% if results %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        {% for key in results[0].keys() %}
+                        <th class="px-6 py-3">{{ key|title }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {% for key, value in row.items() %}
+                        <td class="px-6 py-4">
+                            {% if value is none %}
+                            <span class="text-gray-400">-</span>
+                            {% elif value is number %}
+                            {{ value|round(2) if value is float else value }}
+                            {% else %}
+                            {{ value }}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i class="fas fa-table text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+            <p class="text-gray-500 dark:text-gray-400">No data available for this analysis</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+const chartType = '{{ analysis.get("chart_type", "table") }}';
+const results = {{ results | tojson | safe if results else '[]' }};
+const chartConfig = {{ analysis.get("chart_config", {}) | tojson | safe if analysis.get("chart_config") else '{}' }};
+
+function getChartConfig(type, data) {
+    const labels = data.map(row => row[Object.keys(row)[0]]);
+    const valueKey = Object.keys(data[0])[1] || Object.keys(data[0])[0];
+    const values = data.map(row => row[valueKey] || 0);
+    
+    const colors = [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(20, 184, 166, 0.8)',
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(236, 72, 153, 0.8)'
+    ];
+    
+    const baseConfig = {
+        data: {
+            labels: labels,
+            datasets: [{
+                label: valueKey,
+                data: values,
+                backgroundColor: colors,
+                borderColor: colors.map(c => c.replace('0.8', '1')),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: type === 'pie'
+                }
+            }
+        }
+    };
+    
+    if (type === 'bar') {
+        return { type: 'bar', ...baseConfig };
+    } else if (type === 'line') {
+        baseConfig.data.datasets[0].fill = false;
+        baseConfig.data.datasets[0].borderColor = 'rgba(59, 130, 246, 1)';
+        baseConfig.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.1)';
+        return { type: 'line', ...baseConfig };
+    } else if (type === 'pie') {
+        return { type: 'pie', ...baseConfig };
+    } else if (type === 'area') {
+        baseConfig.data.datasets[0].fill = true;
+        baseConfig.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.2)';
+        baseConfig.data.datasets[0].borderColor = 'rgba(59, 130, 246, 1)';
+        return { type: 'line', ...baseConfig };
+    }
+    
+    return { type: 'bar', ...baseConfig };
+}
+
+if (chartType !== 'table' && results.length > 0) {
+    const ctx = document.getElementById('analysisChart').getContext('2d');
+    new Chart(ctx, getChartConfig(chartType, results));
+}
+
+function exportToCSV() {
+    if (results.length === 0) return;
+    
+    const headers = Object.keys(results[0]);
+    const csv = [
+        headers.join(','),
+        ...results.map(row => headers.map(h => {
+            let val = row[h];
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'string' && val.includes(',')) return `"${val}"`;
+            return val;
+        }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ analysis.get("name", "analysis") | replace(" ", "_") }}.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

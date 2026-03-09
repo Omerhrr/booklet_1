@@ -1,0 +1,105 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Saved Analyses</h1>
+            <p class="text-gray-500 dark:text-gray-400">Your saved data analyses and reports</p>
+        </div>
+        <a href="{{ url_for('analytics.query_builder') }}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+            <i class="fas fa-plus mr-2"></i> New Analysis
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <form method="GET" class="flex gap-4">
+            <select name="source" onchange="this.form.submit()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-48 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                <option value="">All Data Sources</option>
+                {% for source in ['sales', 'purchases', 'inventory', 'cashbook', 'expenses', 'payroll', 'ledger', 'fixed_assets', 'customers', 'vendors'] %}
+                <option value="{{ source }}" {% if request.args.get('source') == source %}selected{% endif %}>{{ source|title }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Analyses List -->
+    {% if analyses %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">Data Source</th>
+                    <th class="px-6 py-3">Chart Type</th>
+                    <th class="px-6 py-3">Shared</th>
+                    <th class="px-6 py-3">Created</th>
+                    <th class="px-6 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for analysis in analyses %}
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            {% if analysis.get('is_favorite') %}
+                            <i class="fas fa-star text-yellow-500 mr-2"></i>
+                            {% endif %}
+                            <span class="font-medium text-gray-900 dark:text-white">{{ analysis.get('name', 'Untitled') }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">{{ analysis.get('data_source', '')|title }}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if analysis.get('chart_type') == 'bar' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                            {% elif analysis.get('chart_type') == 'line' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                            {% elif analysis.get('chart_type') == 'pie' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
+                            {% elif analysis.get('chart_type') == 'table' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                            {% else %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300{% endif %}">
+                            {{ analysis.get('chart_type', 'table')|title }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if analysis.get('is_shared') %}
+                        <span class="text-green-600 dark:text-green-400"><i class="fas fa-check"></i></span>
+                        {% else %}
+                        <span class="text-gray-400"><i class="fas fa-times"></i></span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">{{ analysis.get('created_at', '')[:10] if analysis.get('created_at') else '' }}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <a href="{{ url_for('analytics.view_analysis', analysis_id=analysis.get('id')) }}" 
+                               class="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">
+                                Open
+                            </a>
+                            <a href="{{ url_for('analytics.edit_analysis', analysis_id=analysis.get('id')) }}" 
+                               class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('analytics.delete_analysis', analysis_id=analysis.get('id')) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this analysis?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
+        <i class="fas fa-chart-bar text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Analyses Yet</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Create your first analysis to start exploring your data</p>
+        <a href="{{ url_for('analytics.query_builder') }}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+            Create Analysis
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

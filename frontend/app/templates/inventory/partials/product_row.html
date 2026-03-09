@@ -1,0 +1,39 @@
+<!-- Product Row -->
+<tr id="product-{{ product.get('id') }}" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+            <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ product.get('name') }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">{{ product.get('category', {}).get('name', 'Uncategorized') if product.get('category') else 'Uncategorized' }}</div>
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+        {{ product.get('sku') or '-' }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+            <span class="text-sm font-medium {{ 'text-red-600 dark:text-red-400' if product.get('stock_quantity', 0) <= product.get('reorder_level', 0) else 'text-gray-900 dark:text-white' }}">{{ product.get('stock_quantity', 0) }}</span>
+            {% if product.get('stock_quantity', 0) <= product.get('reorder_level', 0) %}
+            <svg class="w-4 h-4 ml-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {% endif %}
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white">
+        {{ product.get('purchase_price', 0)|currency }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white">
+        {{ product.get('sales_price', 0)|currency }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <a href="{{ url_for('inventory.view_product', product_id=product.get('id')) }}" class="text-primary-600 hover:text-primary-900 dark:text-primary-400 mr-3">View</a>
+        <a href="{{ url_for('inventory.edit_product', product_id=product.get('id')) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400">Edit</a>
+    </td>
+</tr>

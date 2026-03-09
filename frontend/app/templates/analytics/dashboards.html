@@ -1,0 +1,54 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboards</h1>
+            <p class="text-gray-500 dark:text-gray-400">Your custom analytics dashboards</p>
+        </div>
+        <a href="{{ url_for('analytics.new_dashboard') }}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+            <i class="fas fa-plus mr-2"></i> New Dashboard
+        </a>
+    </div>
+
+    <!-- Dashboards Grid -->
+    {% if dashboards %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for dashboard in dashboards %}
+        <a href="{{ url_for('analytics.view_dashboard', dashboard_id=dashboard.get('id')) }}" 
+           class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow p-6 group">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-th-large text-primary-600 dark:text-primary-400 text-xl"></i>
+                </div>
+                {% if dashboard.get('is_default') %}
+                <span class="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded dark:bg-primary-900 dark:text-primary-300">Default</span>
+                {% endif %}
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-primary-600">{{ dashboard.get('name') }}</h3>
+            {% if dashboard.get('description') %}
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ dashboard.get('description') }}</p>
+            {% endif %}
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <i class="fas fa-chart-bar mr-2"></i>
+                <span>{{ dashboard.get('widget_count', 0) }} widgets</span>
+                {% if dashboard.get('is_shared') %}
+                <span class="ml-3"><i class="fas fa-users mr-1"></i>Shared</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
+        <i class="fas fa-th-large text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Dashboards Yet</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Create your first dashboard to visualize your analyses</p>
+        <a href="{{ url_for('analytics.new_dashboard') }}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+            Create Dashboard
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

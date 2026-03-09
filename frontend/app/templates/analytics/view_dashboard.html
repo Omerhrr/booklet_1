@@ -1,0 +1,182 @@
+{% extends "dashboard_layout.html" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('analytics.hub') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Analytics</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">{{ dashboard.get('name', 'Dashboard') }}</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard.get('name', 'Dashboard') }}</h1>
+            {% if dashboard.get('description') %}
+            <p class="text-gray-500 dark:text-gray-400">{{ dashboard.get('description') }}</p>
+            {% endif %}
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('analytics.edit_dashboard', dashboard_id=dashboard.get('id')) }}" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-edit mr-2"></i> Edit
+            </a>
+            <form method="POST" action="{{ url_for('analytics.delete_dashboard', dashboard_id=dashboard.get('id')) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this dashboard?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-red-700 bg-red-100 hover:bg-red-200 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50">
+                    <i class="fas fa-trash mr-2"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Widgets Grid -->
+    {% if dashboard.get('widgets') %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for widget in dashboard.get('widgets', []) %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                {{ widget.get('analysis_name', 'Widget ' + loop.index|string) }}
+            </h3>
+            {% if widget.get('data') %}
+                {% if widget.get('chart_type') == 'table' %}
+                {% set columns = widget.data[0].keys() | list %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                {% for key in columns[:5] %}
+                                <th class="px-4 py-2">{{ key }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in widget.data[:10] %}
+                            {% set row_keys = row.keys() | list %}
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                {% for key in row_keys[:5] %}
+                                <td class="px-4 py-2">{{ row[key] if row[key] is not none else '-' }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div id="widget-{{ loop.index }}" style="height: 250px;"></div>
+                {% endif %}
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
+        <i class="fas fa-th-large text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Empty Dashboard</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Add widgets to this dashboard to get started</p>
+        <a href="{{ url_for('analytics.edit_dashboard', dashboard_id=dashboard.get('id')) }}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+            Add Widgets
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+const widgets = {{ dashboard.get('widgets', []) | tojson | safe }};
+
+function renderWidgetChart(index, widget) {
+    const container = document.getElementById(`widget-${index}`);
+    if (!container || !widget.data || widget.data.length === 0) return;
+    
+    // Initialize ECharts
+    const chart = echarts.init(container);
+    
+    // Get labels and values from data
+    const keys = Object.keys(widget.data[0]);
+    const labelKey = keys[0];
+    const valueKey = keys[1] || keys[0];
+    
+    const labels = widget.data.map(row => row[labelKey]);
+    const values = widget.data.map(row => row[valueKey] || 0);
+    
+    const chartType = widget.chart_type || 'bar';
+    
+    let option = {};
+    
+    if (chartType === 'pie') {
+        option = {
+            tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+            legend: { orient: 'vertical', left: 'left' },
+            series: [{
+                type: 'pie',
+                radius: '50%',
+                data: widget.data.map(row => ({
+                    name: row[labelKey],
+                    value: row[valueKey] || 0
+                })),
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        };
+    } else if (chartType === 'line' || chartType === 'area') {
+        option = {
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: labels },
+            yAxis: { type: 'value' },
+            series: [{
+                type: 'line',
+                data: values,
+                smooth: true,
+                areaStyle: chartType === 'area' ? {} : undefined,
+                lineStyle: { width: 2 },
+                itemStyle: { color: '#3b82f6' }
+            }]
+        };
+    } else {
+        // Default: bar chart
+        option = {
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: labels },
+            yAxis: { type: 'value' },
+            series: [{
+                type: 'bar',
+                data: values,
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#3b82f6' },
+                        { offset: 1, color: '#60a5fa' }
+                    ])
+                },
+                barMaxWidth: 50
+            }]
+        };
+    }
+    
+    chart.setOption(option);
+    
+    // Resize on window resize
+    window.addEventListener('resize', () => chart.resize());
+}
+
+// Initialize all charts
+widgets.forEach((widget, index) => {
+    if (widget.chart_type !== 'table') {
+        setTimeout(() => renderWidgetChart(index + 1, widget), 100 * index);
+    }
+});
+</script>
+{% endblock %}

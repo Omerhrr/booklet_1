@@ -1,0 +1,463 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+            <a href="{{ url_for('cashbook.cashbook_list') }}" class="hover:text-primary-600 dark:hover:text-primary-500">Cash Book</a>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span>New Entry</span>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">New Cash Book Entry</h1>
+    </div>
+
+    <!-- Entry Type Tabs -->
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+        <nav class="flex space-x-8" aria-label="Tabs">
+            <button type="button" onclick="showTab('manual')" id="tab-manual" 
+                    class="tab-btn py-2 px-1 border-b-2 font-medium text-sm border-primary-500 text-primary-600 dark:text-primary-400">
+                Manual Entry
+            </button>
+            <button type="button" onclick="showTab('customer')" id="tab-customer"
+                    class="tab-btn py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300">
+                Fund Customer Account
+            </button>
+            <button type="button" onclick="showTab('vendor')" id="tab-vendor"
+                    class="tab-btn py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300">
+                Fund Vendor Account
+            </button>
+        </nav>
+    </div>
+
+    <!-- Manual Entry Form -->
+    <form method="POST" action="{{ url_for('cashbook.create_entry') }}" id="manual-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="fund_type" value="">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Entry Details -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Entry Details</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="entry_date" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Entry Date *
+                            </label>
+                            <input type="date" name="entry_date" id="entry_date" required
+                                   value="{{ today }}"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+
+                        <div>
+                            <label for="entry_type" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Entry Type *
+                            </label>
+                            <select name="entry_type" id="entry_type" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Type</option>
+                                <option value="receipt">Receipt (Money In)</option>
+                                <option value="payment">Payment (Money Out)</option>
+                                <option value="transfer">Transfer</option>
+                                <option value="adjustment">Adjustment</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Amount *
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">{{ currency }}</span>
+                                <input type="number" name="amount" id="amount" required step="0.01" min="0.01"
+                                       placeholder="0.00"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-12 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="payee_payer" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Payee / Payer
+                            </label>
+                            <input type="text" name="payee_payer" id="payee_payer"
+                                   placeholder="Who received/paid the money?"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Description
+                            </label>
+                            <textarea name="description" id="description" rows="2"
+                                      placeholder="Enter entry description..."
+                                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="reference" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Reference
+                            </label>
+                            <input type="text" name="reference" id="reference"
+                                   placeholder="e.g., Invoice number, Check number, etc."
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Account Selection -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account</h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="account_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Payment Account *
+                            </label>
+                            <select name="account_id" id="account_id" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Account</option>
+                                {% for account in payment_accounts %}
+                                <option value="{{ account.id }}" data-type="{{ account.type }}">
+                                    {{ account.name }}
+                                    {% if account.type == 'bank' %}
+                                        ({{ account.bank_name }} - {{ account.account_number }})
+                                    {% else %}
+                                        (Cash)
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Account to record the transaction</p>
+                        </div>
+
+                        <input type="hidden" name="account_type" id="account_type" value="cash">
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="space-y-3">
+                        <button type="submit" id="manual-submit"
+                                class="w-full text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+                            Create Entry
+                        </button>
+                        <a href="{{ url_for('cashbook.cashbook_list') }}"
+                           class="w-full text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 text-center block">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Info -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="text-sm text-blue-700 dark:text-blue-300">
+                            <p class="font-medium mb-1">Note</p>
+                            <p>Manual entries are recorded separately from system-generated entries (like invoice payments). For payments linked to invoices or bills, use the respective modules.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Fund Customer Form -->
+    <form method="POST" action="{{ url_for('cashbook.create_entry') }}" id="customer-form" style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="fund_type" value="customer">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Fund Customer Account</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Add funds to a customer's account. When they make purchases, the system will automatically deduct from their balance.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label for="customer_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Select Customer *
+                            </label>
+                            <select name="entity_id" id="customer_id" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" data-balance="{{ customer.account_balance }}">
+                                    {{ customer.name }}
+                                    {% if customer.email %}({{ customer.email }}){% endif %}
+                                    {% if customer.account_balance > 0 %}
+                                        - Current Balance: {{ customer.account_balance }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="customer_amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Amount *
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">{{ currency }}</span>
+                                <input type="number" name="amount" id="customer_amount" required step="0.01" min="0.01"
+                                       placeholder="0.00"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-12 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="customer_reference" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Reference
+                            </label>
+                            <input type="text" name="reference" id="customer_reference"
+                                   placeholder="e.g., Deposit slip number"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="customer_description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Description
+                            </label>
+                            <textarea name="description" id="customer_description" rows="2"
+                                      placeholder="Enter description for this funding..."
+                                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Account</h3>
+                    <div>
+                        <label for="customer_payment_account" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Deposit To *
+                        </label>
+                        <select name="payment_account_id" id="customer_payment_account" required
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Account</option>
+                            {% for account in payment_accounts %}
+                            <option value="{{ account.id }}" data-bank-account-id="{{ account.bank_account_id or '' }}">
+                                {{ account.name }}
+                                {% if account.type == 'bank' %}
+                                    ({{ account.bank_name }})
+                                {% endif %}
+                                - Balance: {{ account.balance }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="bank_account_id" id="customer_bank_account_id" value="">
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="space-y-3">
+                        <button type="submit"
+                                class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-500 dark:hover:bg-green-600">
+                            Fund Customer Account
+                        </button>
+                        <a href="{{ url_for('cashbook.cashbook_list') }}"
+                           class="w-full text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 text-center block">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="text-sm text-green-700 dark:text-green-300">
+                            <p class="font-medium mb-1">How it works</p>
+                            <p>When you fund a customer's account, they'll have a prepaid balance. When they make purchases, the system automatically deducts from their balance first.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Fund Vendor Form -->
+    <form method="POST" action="{{ url_for('cashbook.create_entry') }}" id="vendor-form" style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="fund_type" value="vendor">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Fund Vendor Account</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Add prepaid funds to a vendor's account. When we make purchases from them, the system will automatically deduct from the balance.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label for="vendor_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Select Vendor *
+                            </label>
+                            <select name="entity_id" id="vendor_id" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Vendor</option>
+                                {% for vendor in vendors %}
+                                <option value="{{ vendor.id }}" data-balance="{{ vendor.account_balance }}">
+                                    {{ vendor.name }}
+                                    {% if vendor.email %}({{ vendor.email }}){% endif %}
+                                    {% if vendor.account_balance > 0 %}
+                                        - Current Balance: {{ vendor.account_balance }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="vendor_amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Amount *
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">{{ currency }}</span>
+                                <input type="number" name="amount" id="vendor_amount" required step="0.01" min="0.01"
+                                       placeholder="0.00"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-12 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="vendor_reference" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Reference
+                            </label>
+                            <input type="text" name="reference" id="vendor_reference"
+                                   placeholder="e.g., Payment reference"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="vendor_description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Description
+                            </label>
+                            <textarea name="description" id="vendor_description" rows="2"
+                                      placeholder="Enter description for this funding..."
+                                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Account</h3>
+                    <div>
+                        <label for="vendor_payment_account" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Pay From *
+                        </label>
+                        <select name="payment_account_id" id="vendor_payment_account" required
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select Account</option>
+                            {% for account in payment_accounts %}
+                            <option value="{{ account.id }}" data-bank-account-id="{{ account.bank_account_id or '' }}">
+                                {{ account.name }}
+                                {% if account.type == 'bank' %}
+                                    ({{ account.bank_name }})
+                                {% endif %}
+                                - Balance: {{ account.balance }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="bank_account_id" id="vendor_bank_account_id" value="">
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="space-y-3">
+                        <button type="submit"
+                                class="w-full text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-orange-500 dark:hover:bg-orange-600">
+                            Fund Vendor Account
+                        </button>
+                        <a href="{{ url_for('cashbook.cashbook_list') }}"
+                           class="w-full text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 text-center block">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="text-sm text-orange-700 dark:text-orange-300">
+                            <p class="font-medium mb-1">How it works</p>
+                            <p>When you fund a vendor's account, you're prepaying them. When we make purchases from them, the system automatically deducts from the prepaid balance first.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function showTab(tab) {
+    // Hide all forms
+    document.getElementById('manual-form').style.display = 'none';
+    document.getElementById('customer-form').style.display = 'none';
+    document.getElementById('vendor-form').style.display = 'none';
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+        btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    });
+    
+    // Show selected form and activate tab
+    if (tab === 'manual') {
+        document.getElementById('manual-form').style.display = 'block';
+        document.getElementById('tab-manual').classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+        document.getElementById('tab-manual').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    } else if (tab === 'customer') {
+        document.getElementById('customer-form').style.display = 'block';
+        document.getElementById('tab-customer').classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+        document.getElementById('tab-customer').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    } else if (tab === 'vendor') {
+        document.getElementById('vendor-form').style.display = 'block';
+        document.getElementById('tab-vendor').classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+        document.getElementById('tab-vendor').classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    }
+}
+
+document.getElementById('account_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const accountType = selectedOption.getAttribute('data-type') || 'cash';
+    document.getElementById('account_type').value = accountType;
+});
+
+// Handle bank_account_id for customer form
+document.getElementById('customer_payment_account')?.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const bankAccountId = selectedOption.getAttribute('data-bank-account-id') || '';
+    document.getElementById('customer_bank_account_id').value = bankAccountId;
+});
+
+// Handle bank_account_id for vendor form
+document.getElementById('vendor_payment_account')?.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const bankAccountId = selectedOption.getAttribute('data-bank-account-id') || '';
+    document.getElementById('vendor_bank_account_id').value = bankAccountId;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('agents.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Agents</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">Audit Agent</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Audit Agent</h1>
+            <p class="text-gray-500 dark:text-gray-400">Comprehensive business auditing with reports</p>
+        </div>
+        <form method="POST" action="{{ url_for('agents.run_audit') }}" class="flex gap-2 items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <input type="checkbox" name="send_email" {% if config.email_enabled %}checked{% endif %} class="mr-2">
+                Send Email Report
+            </label>
+            <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+                <i class="fas fa-play mr-2"></i> Run Audit
+            </button>
+        </form>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-red-100 rounded-lg dark:bg-red-900">
+                    <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Critical</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ findings_summary.critical }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-orange-100 rounded-lg dark:bg-orange-900">
+                    <i class="fas fa-exclamation-triangle text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">High</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ findings_summary.high }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-yellow-100 rounded-lg dark:bg-yellow-900">
+                    <i class="fas fa-info-circle text-yellow-600 dark:text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Medium</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ findings_summary.medium }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg dark:bg-blue-900">
+                    <i class="fas fa-flag text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Open</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ findings_summary.open }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Checks -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-tasks mr-2 text-primary-600"></i> Audit Checks Performed
+            </h3>
+            <ul class="space-y-3">
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Ledger Balance Check</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Verifies all accounts are balanced</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Invoice Reconciliation</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Checks for payment discrepancies</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Inventory Verification</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Detects negative stock and anomalies</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Audit Log Review</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Identifies suspicious activity patterns</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Branch Comparison</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Compares metrics across branches</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-envelope mr-2 text-primary-600"></i> Email Configuration
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Email Notifications</p>
+                    <p class="font-medium text-gray-900 dark:text-white">
+                        {% if config.email_enabled %}
+                        <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i> Enabled</span>
+                        {% else %}
+                        <span class="text-gray-500"><i class="fas fa-times-circle mr-1"></i> Disabled</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Recipients</p>
+                    {% if config.email_recipients %}
+                    <ul class="mt-1">
+                        {% for email in config.email_recipients %}
+                        <li class="text-sm text-gray-900 dark:text-white">{{ email }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-sm text-gray-500">Not configured</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Last Run</p>
+                    <p class="font-medium text-gray-900 dark:text-white">
+                        {{ config.last_run_at[:16] | replace('T', ' ') if config.last_run_at else 'Never' }}
+                    </p>
+                </div>
+                <a href="{{ url_for('agents.settings') }}" class="inline-block text-sm text-primary-600 hover:underline">
+                    <i class="fas fa-cog mr-1"></i> Configure Settings
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Executions -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-history mr-2 text-primary-600"></i> Audit History
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            {% if executions %}
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-4 py-3">Date</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Records</th>
+                        <th class="px-4 py-3">Findings</th>
+                        <th class="px-4 py-3">Report</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exec in executions %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <td class="px-4 py-3">{{ exec.started_at[:16] | replace('T', ' ') if exec.started_at else '-' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if exec.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif exec.status == 'running' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                {% elif exec.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ exec.status }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">{{ exec.records_processed }}</td>
+                        <td class="px-4 py-3">
+                            {% if exec.records_flagged > 0 %}
+                            <span class="text-red-600 dark:text-red-400 font-medium">{{ exec.records_flagged }}</span>
+                            {% else %}
+                            <span class="text-green-600 dark:text-green-400">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if exec.report_path %}
+                            <a href="/download/audit_reports/{{ exec.report_path.split('/')[-1] }}" class="text-primary-600 hover:underline" target="_blank">
+                                <i class="fas fa-file-pdf mr-1"></i> View PDF
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('agents.execution_detail', execution_id=exec.id) }}" class="text-primary-600 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-search-dollar text-4xl mb-3"></i>
+                <p>No audits yet. Click "Run Audit" to start.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

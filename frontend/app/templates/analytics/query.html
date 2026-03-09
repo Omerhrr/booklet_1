@@ -1,0 +1,1235 @@
+{% extends "dashboard_layout.html" %}
+
+{% block head %}
+<style>
+    .query-section {
+        transition: all 0.2s ease;
+    }
+    .query-section:hover {
+        border-color: var(--primary-500);
+    }
+    .field-item {
+        transition: all 0.15s ease;
+    }
+    .field-item:hover {
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+    .field-item.selected {
+        background-color: rgba(59, 130, 246, 0.15);
+        border-left: 3px solid var(--primary-500);
+    }
+    .field-item.grouped {
+        background-color: rgba(168, 85, 247, 0.1);
+        border-left: 3px solid #a855f7;
+    }
+    .drop-zone {
+        border: 2px dashed #d1d5db;
+        min-height: 60px;
+        transition: all 0.2s ease;
+    }
+    .drop-zone.drag-over {
+        border-color: var(--primary-500);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 500;
+        margin: 4px;
+        gap: 8px;
+    }
+    .chip-remove {
+        cursor: pointer;
+        opacity: 0.6;
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1;
+    }
+    .chip-remove:hover {
+        opacity: 1;
+    }
+    .field-label {
+        font-size: 13px;
+        color: #374151;
+    }
+    .field-label small {
+        color: #9ca3af;
+        font-weight: normal;
+    }
+    .group-btn {
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.15s ease;
+    }
+    .group-btn:hover {
+        background-color: rgba(168, 85, 247, 0.1);
+    }
+    .group-btn.active {
+        background-color: rgba(168, 85, 247, 0.2);
+        color: #a855f7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Query Builder</h1>
+            <p class="text-gray-500 dark:text-gray-400">Build custom queries and visualizations</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="resetQuery()" class="text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-700 dark:text-gray-300">
+                <i class="fas fa-redo mr-2"></i> Reset
+            </button>
+            <button onclick="saveAnalysis()" class="text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                <i class="fas fa-save mr-2"></i> Save
+            </button>
+            <button onclick="executeQuery()" class="text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700">
+                <i class="fas fa-play mr-2"></i> Run Query
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Left Sidebar - Data Source & Fields -->
+        <div class="lg:col-span-1 space-y-4">
+            <!-- Data Source Selector -->
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Source</label>
+                    <select id="dataSource" onchange="loadFields()" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">Select data source...</option>
+                        {% for source in sources %}
+                        <option value="{{ source.id }}" {% if source.id == data_source %}selected{% endif %}>{{ source.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fields Panel -->
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800" id="fieldsPanel" style="display: none;">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <input type="text" id="fieldSearch" placeholder="Search fields..." oninput="filterFields()"
+                        class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div class="p-4">
+                    <!-- Dimensions -->
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Dimensions</h4>
+                    <div id="dimensionsList" class="space-y-1 mb-4">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <!-- Measures -->
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Measures</h4>
+                    <div id="measuresList" class="space-y-1 mb-4">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <!-- Date Fields -->
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Date Fields</h4>
+                    <div id="dateFieldsList" class="space-y-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content - Query Configuration -->
+        <div class="lg:col-span-3 space-y-4">
+            <!-- Columns Selection -->
+            <div class="bg-white rounded-lg shadow query-section dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                        <i class="fas fa-columns mr-2 text-primary-600"></i> Columns
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div id="columnsDropZone" class="drop-zone rounded-lg p-3 flex flex-wrap min-h-[50px]">
+                        <span class="text-gray-400 text-sm" id="columnsPlaceholder">Drag fields here or click to add...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-lg shadow query-section dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                        <i class="fas fa-filter mr-2 text-primary-600"></i> Filters
+                    </h3>
+                    <button onclick="addFilter()" class="text-sm text-primary-600 hover:underline">
+                        <i class="fas fa-plus mr-1"></i> Add Filter
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div id="filtersContainer" class="space-y-3">
+                        <p class="text-gray-400 text-sm" id="filtersPlaceholder">No filters applied</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group By & Aggregations -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Group By -->
+                <div class="bg-white rounded-lg shadow query-section dark:bg-gray-800">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="font-medium text-gray-900 dark:text-white">
+                            <i class="fas fa-layer-group mr-2 text-primary-600"></i> Group By
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div id="groupByDropZone" class="drop-zone rounded-lg p-3 flex flex-wrap min-h-[50px]">
+                            <span class="text-gray-400 text-sm" id="groupByPlaceholder">Group results by...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aggregations -->
+                <div class="bg-white rounded-lg shadow query-section dark:bg-gray-800">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="font-medium text-gray-900 dark:text-white">
+                            <i class="fas fa-calculator mr-2 text-primary-600"></i> Aggregations
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div id="aggregationsContainer" class="space-y-2">
+                            <p class="text-gray-400 text-sm" id="aggregationsPlaceholder">Add aggregation functions...</p>
+                        </div>
+                        <button onclick="addAggregation()" class="mt-2 text-sm text-primary-600 hover:underline">
+                            <i class="fas fa-plus mr-1"></i> Add Aggregation
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Type & Options -->
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                        <i class="fas fa-chart-pie mr-2 text-primary-600"></i> Visualization
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mb-4">
+                        <button onclick="setChartType('table')" class="chart-type-btn p-3 rounded-lg border-2 border-gray-200 hover:border-primary-500 dark:border-gray-700" data-type="table">
+                            <i class="fas fa-table text-xl mb-1"></i>
+                            <span class="block text-xs">Table</span>
+                        </button>
+                        <button onclick="setChartType('bar')" class="chart-type-btn p-3 rounded-lg border-2 border-gray-200 hover:border-primary-500 dark:border-gray-700" data-type="bar">
+                            <i class="fas fa-chart-bar text-xl mb-1"></i>
+                            <span class="block text-xs">Bar</span>
+                        </button>
+                        <button onclick="setChartType('line')" class="chart-type-btn p-3 rounded-lg border-2 border-gray-200 hover:border-primary-500 dark:border-gray-700" data-type="line">
+                            <i class="fas fa-chart-line text-xl mb-1"></i>
+                            <span class="block text-xs">Line</span>
+                        </button>
+                        <button onclick="setChartType('pie')" class="chart-type-btn p-3 rounded-lg border-2 border-gray-200 hover:border-primary-500 dark:border-gray-700" data-type="pie">
+                            <i class="fas fa-chart-pie text-xl mb-1"></i>
+                            <span class="block text-xs">Pie</span>
+                        </button>
+                        <button onclick="setChartType('area')" class="chart-type-btn p-3 rounded-lg border-2 border-gray-200 hover:border-primary-500 dark:border-gray-700" data-type="area">
+                            <i class="fas fa-chart-area text-xl mb-1"></i>
+                            <span class="block text-xs">Area</span>
+                        </button>
+                        <button onclick="setChartType('kpi')" class="chart-type-btn p-3 rounded-lg border-2 border-gray-200 hover:border-primary-500 dark:border-gray-700" data-type="kpi">
+                            <i class="fas fa-tachometer-alt text-xl mb-1"></i>
+                            <span class="block text-xs">KPI</span>
+                        </button>
+                    </div>
+                    <div id="chartOptions" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">X-Axis Field</label>
+                            <select id="xAxisField" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select field...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Y-Axis Field</label>
+                            <select id="yAxisField" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select field...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Preview -->
+            <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                        <i class="fas fa-eye mr-2 text-primary-600"></i> Preview
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="exportCSV()" class="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-file-csv mr-1"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div id="resultsContainer">
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-play-circle text-4xl mb-3"></i>
+                            <p>Click "Run Query" to see results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Analysis Modal -->
+<div id="saveModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Save Analysis</h3>
+        </div>
+        <form id="saveForm" onsubmit="submitSave(event)" class="p-4">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                    <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <textarea name="description" rows="2" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_shared" id="isShared" class="w-4 h-4 text-primary-600 rounded">
+                    <label for="isShared" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Share with team</label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" onclick="closeSaveModal()" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-white bg-primary-700 rounded-lg hover:bg-primary-800">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// CSRF token for AJAX requests
+const csrfToken = '{{ csrf_token() }}';
+
+// Query state
+let queryState = {
+    data_source: '{{ data_source or "" }}',
+    columns: [],
+    filters: [],
+    group_by: [],
+    aggregations: {},
+    order_by: [],
+    chart_type: 'table',
+    chart_config: {}
+};
+
+let currentFields = {};
+
+// Load fields when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (queryState.data_source) {
+        loadFields();
+    }
+    setChartType('table');
+});
+
+async function loadFields() {
+    const source = document.getElementById('dataSource').value;
+    if (!source) {
+        document.getElementById('fieldsPanel').style.display = 'none';
+        return;
+    }
+    
+    // Clear current selections when changing data source
+    if (queryState.data_source && queryState.data_source !== source) {
+        queryState.columns = [];
+        queryState.group_by = [];
+        queryState.filters = [];
+        queryState.aggregations = {};
+        window.lastQueryResults = null;
+        
+        // Clear UI
+        renderColumns();
+        renderGroupBy();
+        document.getElementById('filtersContainer').innerHTML = '<p class="text-gray-400 text-sm" id="filtersPlaceholder">No filters applied</p>';
+        document.getElementById('aggregationsContainer').innerHTML = '<p class="text-gray-400 text-sm" id="aggregationsPlaceholder">Add aggregation functions...</p>';
+    }
+    
+    queryState.data_source = source;
+    
+    try {
+        const response = await fetch(`/analytics/sources/${source}/fields`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            currentFields = data;
+            renderFields(data);
+            document.getElementById('fieldsPanel').style.display = 'block';
+            
+            // Update axis dropdowns
+            updateAxisDropdowns(data);
+            
+            // Re-render columns and group by to update field labels
+            renderColumns();
+            renderGroupBy();
+        } else {
+            console.error('Error loading fields:', data.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Error loading fields:', error);
+    }
+}
+
+function renderFields(fields) {
+    const dimensionsList = document.getElementById('dimensionsList');
+    const measuresList = document.getElementById('measuresList');
+    const dateFieldsList = document.getElementById('dateFieldsList');
+    
+    dimensionsList.innerHTML = '';
+    measuresList.innerHTML = '';
+    dateFieldsList.innerHTML = '';
+    
+    if (fields.dimensions) {
+        fields.dimensions.forEach(field => {
+            dimensionsList.innerHTML += createFieldItem(field, 'dimension');
+        });
+    }
+    
+    if (fields.measures) {
+        fields.measures.forEach(field => {
+            measuresList.innerHTML += createFieldItem(field, 'measure');
+        });
+    }
+    
+    if (fields.date_fields) {
+        fields.date_fields.forEach(field => {
+            dateFieldsList.innerHTML += createFieldItem(field, 'date');
+        });
+    }
+}
+
+function createFieldItem(field, type) {
+    const colors = {
+        dimension: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        measure: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        date: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
+    };
+    const typeLabel = {
+        dimension: 'Dim',
+        measure: 'Num',
+        date: 'Date'
+    };
+    
+    // Only dimensions and date fields can be grouped
+    const canGroupBy = type === 'dimension' || type === 'date';
+    const isGrouped = queryState.group_by.includes(field.id);
+    const isSelected = queryState.columns.includes(field.id);
+    
+    let itemClass = 'field-item flex items-center justify-between p-2 rounded border border-transparent hover:border-gray-200 dark:hover:border-gray-600';
+    if (isSelected) itemClass += ' selected';
+    if (isGrouped) itemClass += ' grouped';
+    
+    return `
+        <div class="${itemClass}"
+             data-field-id="${field.id}" data-field-type="${type}" data-field-label="${field.label}">
+            <div class="flex items-center gap-2 flex-1">
+                <span class="chip ${colors[type]} text-xs flex-shrink-0">${typeLabel[type]}</span>
+                <span class="field-label text-gray-700 dark:text-gray-300">${field.label}</span>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                ${canGroupBy ? `
+                <button type="button" onclick="event.stopPropagation(); toggleGroupBy('${field.id}')" 
+                        class="group-btn ${isGrouped ? 'active text-purple-600' : 'text-gray-400 hover:text-purple-600'}"
+                        title="Group By this field">
+                    <i class="fas fa-object-group text-sm"></i>
+                </button>
+                ` : ''}
+                <input type="checkbox" id="col_${field.id}" 
+                       class="w-4 h-4 text-primary-600 rounded cursor-pointer"
+                       ${isSelected ? 'checked' : ''}
+                       onchange="toggleColumn('${field.id}', '${type}')">
+            </div>
+        </div>
+    `;
+}
+
+function updateAxisDropdowns(fields) {
+    const xSelect = document.getElementById('xAxisField');
+    const ySelect = document.getElementById('yAxisField');
+    
+    let options = '<option value="">Select field...</option>';
+    
+    if (fields.dimensions) {
+        fields.dimensions.forEach(f => {
+            options += `<option value="${f.id}">${f.label} (Dimension)</option>`;
+        });
+    }
+    if (fields.date_fields) {
+        fields.date_fields.forEach(f => {
+            options += `<option value="${f.id}">${f.label} (Date)</option>`;
+        });
+    }
+    xSelect.innerHTML = options;
+    
+    options = '<option value="">Select field...</option>';
+    if (fields.measures) {
+        fields.measures.forEach(f => {
+            options += `<option value="${f.id}">${f.label} (Measure)</option>`;
+        });
+    }
+    ySelect.innerHTML = options;
+}
+
+function toggleColumn(fieldId, type) {
+    const checkbox = document.getElementById(`col_${fieldId}`);
+    const fieldItem = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (!checkbox) return;
+    
+    // Checkbox already toggled by click, just use its state
+    const isChecked = checkbox.checked;
+    
+    if (isChecked) {
+        if (!queryState.columns.includes(fieldId)) {
+            queryState.columns.push(fieldId);
+        }
+        if (fieldItem) fieldItem.classList.add('selected');
+    } else {
+        queryState.columns = queryState.columns.filter(c => c !== fieldId);
+        if (fieldItem) fieldItem.classList.remove('selected');
+    }
+    
+    renderColumns();
+}
+
+function renderColumns() {
+    const container = document.getElementById('columnsDropZone');
+    
+    if (queryState.columns.length === 0) {
+        container.innerHTML = '<span class="text-gray-400 text-sm" id="columnsPlaceholder">Click fields from the left panel to add them as columns</span>';
+        return;
+    }
+    
+    container.innerHTML = queryState.columns.map(col => {
+        const field = findField(col);
+        return `<span class="chip bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300">
+            ${field ? field.label : col}
+            <span class="chip-remove" onclick="event.stopPropagation(); removeColumn('${col}')">&times;</span>
+        </span>`;
+    }).join('');
+}
+
+function findField(fieldId) {
+    const allFields = [
+        ...(currentFields.dimensions || []),
+        ...(currentFields.measures || []),
+        ...(currentFields.date_fields || [])
+    ];
+    return allFields.find(f => f.id === fieldId);
+}
+
+function removeColumn(fieldId) {
+    queryState.columns = queryState.columns.filter(c => c !== fieldId);
+    const checkbox = document.getElementById(`col_${fieldId}`);
+    const fieldItem = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (checkbox) checkbox.checked = false;
+    if (fieldItem) fieldItem.classList.remove('selected');
+    renderColumns();
+}
+
+function addFilter() {
+    if (!currentFields || !currentFields.all_fields) {
+        alert('Please select a data source first');
+        return;
+    }
+    
+    const container = document.getElementById('filtersContainer');
+    const placeholder = document.getElementById('filtersPlaceholder');
+    if (placeholder) placeholder.remove();
+    
+    const filterId = Date.now();
+    
+    // Build field options from all fields
+    let fieldOptions = '<option value="">Select field...</option>';
+    const allFields = currentFields.all_fields || {};
+    Object.entries(allFields).forEach(([id, f]) => {
+        fieldOptions += `<option value="${id}">${f.label || id}</option>`;
+    });
+    
+    const filterHtml = `
+        <div class="filter-row flex items-center gap-2 p-2 bg-gray-50 rounded-lg dark:bg-gray-700" id="filter_${filterId}">
+            <select class="filter-field rounded border border-gray-300 bg-white p-2 text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                ${fieldOptions}
+            </select>
+            <select class="filter-operator rounded border border-gray-300 bg-white p-2 text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                <option value="eq">equals</option>
+                <option value="ne">not equals</option>
+                <option value="gt">greater than</option>
+                <option value="gte">greater or equal</option>
+                <option value="lt">less than</option>
+                <option value="lte">less or equal</option>
+                <option value="like">contains</option>
+                <option value="in">in list</option>
+                <option value="between">between</option>
+            </select>
+            <input type="text" class="filter-value rounded border border-gray-300 bg-white p-2 text-sm flex-1 dark:bg-gray-600 dark:border-gray-500 dark:text-white" placeholder="Value">
+            <button onclick="removeFilter(${filterId})" class="text-red-500 hover:text-red-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', filterHtml);
+}
+
+// Placeholder function for filter operator updates (field type can determine available operators)
+function updateFilterOperators(selectElement) {
+    // Currently all operators are available for all field types
+    // Could be enhanced to show different operators based on field type
+}
+
+function removeFilter(filterId) {
+    document.getElementById(`filter_${filterId}`).remove();
+    
+    const container = document.getElementById('filtersContainer');
+    if (container.children.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-sm" id="filtersPlaceholder">No filters applied</p>';
+    }
+}
+
+function addAggregation() {
+    if (!currentFields || !currentFields.measures || currentFields.measures.length === 0) {
+        alert('Please select a data source with numeric fields first');
+        return;
+    }
+    
+    const container = document.getElementById('aggregationsContainer');
+    const placeholder = document.getElementById('aggregationsPlaceholder');
+    if (placeholder) placeholder.remove();
+    
+    const aggId = Date.now();
+    const measures = currentFields.measures || [];
+    
+    const aggHtml = `
+        <div class="flex items-center gap-2" id="agg_${aggId}">
+            <select class="agg-func rounded border border-gray-300 bg-white p-2 text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                <option value="sum">SUM</option>
+                <option value="count">COUNT</option>
+                <option value="avg">AVG</option>
+                <option value="min">MIN</option>
+                <option value="max">MAX</option>
+            </select>
+            <span class="text-gray-500">of</span>
+            <select class="agg-field rounded border border-gray-300 bg-white p-2 text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                ${measures.map(m => `<option value="${m.id}">${m.label}</option>`).join('')}
+            </select>
+            <button onclick="removeAggregation(${aggId})" class="text-red-500 hover:text-red-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', aggHtml);
+}
+
+function removeAggregation(aggId) {
+    document.getElementById(`agg_${aggId}`).remove();
+    
+    const container = document.getElementById('aggregationsContainer');
+    if (container.querySelectorAll('[id^="agg_"]').length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-sm" id="aggregationsPlaceholder">Add aggregation functions...</p>';
+    }
+}
+
+function setChartType(type) {
+    queryState.chart_type = type;
+    
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+        btn.classList.remove('border-primary-500', 'bg-primary-50');
+        btn.classList.add('border-gray-200', 'dark:border-gray-700');
+    });
+    
+    const selectedBtn = document.querySelector(`[data-type="${type}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('border-primary-500', 'bg-primary-50');
+        selectedBtn.classList.remove('border-gray-200', 'dark:border-gray-700');
+    }
+}
+
+async function executeQuery() {
+    // Validate data source
+    if (!queryState.data_source) {
+        showError('Please select a data source first');
+        return;
+    }
+    
+    // Collect filters
+    const filters = [];
+    document.querySelectorAll('.filter-row').forEach(row => {
+        const fieldSelect = row.querySelector('.filter-field');
+        const operatorSelect = row.querySelector('.filter-operator');
+        const valueInput = row.querySelector('.filter-value');
+        
+        if (fieldSelect && operatorSelect && valueInput) {
+            const field = fieldSelect.value;
+            const operator = operatorSelect.value;
+            const value = valueInput.value;
+            
+            if (field && value) {
+                filters.push({ field, operator, value });
+            }
+        }
+    });
+    
+    // Collect aggregations
+    const aggregations = {};
+    document.querySelectorAll('[id^="agg_"]').forEach(row => {
+        const funcSelect = row.querySelector('.agg-func');
+        const fieldSelect = row.querySelector('.agg-field');
+        
+        if (funcSelect && fieldSelect) {
+            const func = funcSelect.value;
+            const field = fieldSelect.value;
+            if (func && field) {
+                aggregations[field] = func;
+            }
+        }
+    });
+    
+    // Get axis fields for chart config
+    const xAxis = document.getElementById('xAxisField')?.value || null;
+    const yAxis = document.getElementById('yAxisField')?.value || null;
+    
+    const requestData = {
+        data_source: queryState.data_source,
+        columns: queryState.columns.length > 0 ? queryState.columns : null,
+        filters: filters.length > 0 ? filters : null,
+        group_by: queryState.group_by.length > 0 ? queryState.group_by : null,
+        aggregations: Object.keys(aggregations).length > 0 ? aggregations : null,
+        limit: 500
+    };
+    
+    // Show loading state
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = `
+        <div class="text-center py-12 text-gray-400">
+            <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
+            <p>Executing query...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/analytics/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            showError('Server returned non-JSON response. Please check server logs.');
+            console.error('Non-JSON response:', text);
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            renderResults(data.results, data.metadata);
+        } else {
+            showError(data.error || data.detail || 'Query failed');
+        }
+    } catch (error) {
+        console.error('Query error:', error);
+        showError(error.message || 'Network error occurred');
+    }
+}
+
+function renderResults(results, metadata) {
+    const container = document.getElementById('resultsContainer');
+    
+    // Store results for CSV export
+    window.lastQueryResults = results;
+    
+    if (!results || results.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12 text-gray-400">
+                <i class="fas fa-inbox text-4xl mb-3"></i>
+                <p>No results found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Get columns from first result
+    const columns = Object.keys(results[0]);
+    
+    // Render based on chart type
+    if (queryState.chart_type === 'table') {
+        let html = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            ${columns.map(col => `<th class="px-4 py-3">${col}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.slice(0, 100).map(row => `
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                ${columns.map(col => `<td class="px-4 py-3">${formatValue(row[col])}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">${results.length} rows</p>
+        `;
+        container.innerHTML = html;
+    } else {
+        // Render chart container for ECharts (uses div, not canvas)
+        container.innerHTML = `
+            <div id="resultsChart" style="width: 100%; height: 400px;"></div>
+        `;
+        renderChart(results, columns);
+    }
+}
+
+function formatValue(val) {
+    if (val === null || val === undefined) return '-';
+    if (typeof val === 'number') return val.toLocaleString();
+    return val;
+}
+
+function renderChart(results, columns) {
+    const chartContainer = document.getElementById('resultsChart');
+    if (!chartContainer) return;
+    
+    // Check if ECharts is available
+    if (typeof echarts === 'undefined') {
+        chartContainer.innerHTML = '<p class="text-center text-gray-500 py-8">Chart library not loaded. Please refresh the page.</p>';
+        return;
+    }
+    
+    const chart = echarts.init(chartContainer);
+    
+    // Prepare data
+    const labels = results.slice(0, 20).map((r, i) => {
+        const val = r[columns[0]];
+        return val !== null && val !== undefined ? String(val) : `Item ${i + 1}`;
+    });
+    const values = results.slice(0, 20).map(r => {
+        const val = r[columns[1]];
+        return val !== null && val !== undefined ? parseFloat(val) : 0;
+    });
+    
+    let option = {};
+    
+    if (queryState.chart_type === 'kpi') {
+        // KPI Card view
+        const total = values.reduce((a, b) => a + b, 0);
+        const avg = values.length > 0 ? total / values.length : 0;
+        const max = values.length > 0 ? Math.max(...values) : 0;
+        const min = values.length > 0 ? Math.min(...values) : 0;
+        
+        chartContainer.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total</p>
+                    <p class="text-2xl font-bold text-blue-600">${total.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Average</p>
+                    <p class="text-2xl font-bold text-green-600">${avg.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                </div>
+                <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Maximum</p>
+                    <p class="text-2xl font-bold text-purple-600">${max.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                </div>
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Minimum</p>
+                    <p class="text-2xl font-bold text-orange-600">${min.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                </div>
+            </div>
+        `;
+        return;
+    } else if (queryState.chart_type === 'pie') {
+        // Pie chart
+        option = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left',
+                top: 'middle'
+            },
+            series: [{
+                type: 'pie',
+                radius: ['40%', '70%'],
+                avoidLabelOverlap: true,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    formatter: '{b}: {d}%'
+                },
+                data: results.slice(0, 10).map((r, i) => {
+                    const val = r[columns[0]] || `Item ${i + 1}`;
+                    return {
+                        name: String(val),
+                        value: r[columns[1]] !== null && r[columns[1]] !== undefined ? parseFloat(r[columns[1]]) : 0
+                    };
+                })
+            }]
+        };
+    } else if (queryState.chart_type === 'bar') {
+        // Bar chart
+        option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: labels,
+                axisLabel: {
+                    rotate: labels.length > 5 ? 45 : 0,
+                    interval: 0
+                }
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                type: 'bar',
+                data: values,
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#3b82f6' },
+                        { offset: 1, color: '#93c5fd' }
+                    ])
+                }
+            }]
+        };
+    } else if (queryState.chart_type === 'line' || queryState.chart_type === 'area') {
+        // Line/Area chart
+        option = {
+            tooltip: {
+                trigger: 'axis'
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: labels,
+                axisLabel: {
+                    rotate: labels.length > 5 ? 45 : 0,
+                    interval: 0
+                }
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                type: 'line',
+                data: values,
+                smooth: true,
+                symbol: 'circle',
+                symbolSize: 8,
+                lineStyle: {
+                    width: 3,
+                    color: '#3b82f6'
+                },
+                areaStyle: queryState.chart_type === 'area' ? {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(59, 130, 246, 0.4)' },
+                        { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                    ])
+                } : null
+            }]
+        };
+    }
+    
+    chart.setOption(option);
+    
+    // Resize chart on window resize
+    window.addEventListener('resize', function() {
+        chart.resize();
+    });
+}
+
+function showError(message) {
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = `
+        <div class="text-center py-12 text-red-500">
+            <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+function resetQuery() {
+    queryState = {
+        data_source: '',
+        columns: [],
+        filters: [],
+        group_by: [],
+        aggregations: {},
+        order_by: [],
+        chart_type: 'table',
+        chart_config: {}
+    };
+    
+    document.getElementById('dataSource').value = '';
+    document.getElementById('fieldsPanel').style.display = 'none';
+    document.getElementById('filtersContainer').innerHTML = '<p class="text-gray-400 text-sm" id="filtersPlaceholder">No filters applied</p>';
+    document.getElementById('aggregationsContainer').innerHTML = '<p class="text-gray-400 text-sm" id="aggregationsPlaceholder">Add aggregation functions...</p>';
+    renderColumns();
+    renderGroupBy();
+    setChartType('table');
+    window.lastQueryResults = null;
+    
+    document.getElementById('resultsContainer').innerHTML = `
+        <div class="text-center py-12 text-gray-400">
+            <i class="fas fa-play-circle text-4xl mb-3"></i>
+            <p>Click "Run Query" to see results</p>
+        </div>
+    `;
+}
+
+function saveAnalysis() {
+    if (!queryState.data_source) {
+        alert('Please select a data source first');
+        return;
+    }
+    if (queryState.columns.length === 0) {
+        alert('Please select at least one column');
+        return;
+    }
+    document.getElementById('saveModal').classList.remove('hidden');
+}
+
+function closeSaveModal() {
+    document.getElementById('saveModal').classList.add('hidden');
+}
+
+async function submitSave(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Collect filters from the UI
+    const filters = [];
+    document.querySelectorAll('.filter-row').forEach(row => {
+        const fieldSelect = row.querySelector('.filter-field');
+        const operatorSelect = row.querySelector('.filter-operator');
+        const valueInput = row.querySelector('.filter-value');
+        
+        if (fieldSelect && operatorSelect && valueInput) {
+            const field = fieldSelect.value;
+            const operator = operatorSelect.value;
+            const value = valueInput.value;
+            
+            if (field && value) {
+                filters.push({ field, operator, value });
+            }
+        }
+    });
+    
+    // Collect aggregations from the UI
+    const aggregations = {};
+    document.querySelectorAll('[id^="agg_"]').forEach(row => {
+        const funcSelect = row.querySelector('.agg-func');
+        const fieldSelect = row.querySelector('.agg-field');
+        
+        if (funcSelect && fieldSelect) {
+            const func = funcSelect.value;
+            const field = fieldSelect.value;
+            if (func && field) {
+                aggregations[field] = func;
+            }
+        }
+    });
+    
+    const data = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        data_source: queryState.data_source,
+        columns: queryState.columns,
+        filters: filters.length > 0 ? filters : null,
+        group_by: queryState.group_by.length > 0 ? queryState.group_by : null,
+        aggregations: Object.keys(aggregations).length > 0 ? aggregations : null,
+        chart_type: queryState.chart_type,
+        is_shared: formData.get('is_shared') === 'on'
+    };
+    
+    try {
+        const response = await fetch('{{ url_for("analytics.new_analysis") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            alert('Analysis saved successfully!');
+            closeSaveModal();
+            window.location.href = '{{ url_for("analytics.saved_analyses") }}';
+        } else {
+            alert('Error: ' + (result.error || result.detail || 'Failed to save analysis'));
+        }
+    } catch (e) {
+        alert('Error saving analysis: ' + e.message);
+    }
+}
+
+function filterFields() {
+    const search = document.getElementById('fieldSearch').value.toLowerCase();
+    document.querySelectorAll('.field-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(search) ? '' : 'none';
+    });
+}
+
+function exportCSV() {
+    if (!window.lastQueryResults || window.lastQueryResults.length === 0) {
+        alert('No results to export. Please run a query first.');
+        return;
+    }
+    
+    const results = window.lastQueryResults;
+    const headers = Object.keys(results[0]);
+    
+    const csvContent = [
+        headers.join(','),
+        ...results.map(row => headers.map(h => {
+            let val = row[h];
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                return '"' + val.replace(/"/g, '""') + '"';
+            }
+            return val;
+        }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'query_results_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Group By functions
+function toggleGroupBy(fieldId) {
+    const index = queryState.group_by.indexOf(fieldId);
+    if (index === -1) {
+        queryState.group_by.push(fieldId);
+    } else {
+        queryState.group_by.splice(index, 1);
+    }
+    renderGroupBy();
+    renderFields(currentFields); // Re-render fields to update UI state
+}
+
+function renderGroupBy() {
+    const container = document.getElementById('groupByDropZone');
+    
+    if (!container) return;
+    
+    if (queryState.group_by.length === 0) {
+        container.innerHTML = '<span class="text-gray-400 text-sm" id="groupByPlaceholder">Click the <i class=\"fas fa-layer-group\"></i> icon on dimension/date fields to group by them</span>';
+        return;
+    }
+    
+    container.innerHTML = queryState.group_by.map(fieldId => {
+        const field = findField(fieldId);
+        return `<span class="chip bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+            <span>${field ? field.label : fieldId}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removeGroupBy('${fieldId}')">×</span>
+        </span>`;
+    }).join('');
+}
+
+function removeGroupBy(fieldId) {
+    queryState.group_by = queryState.group_by.filter(f => f !== fieldId);
+    renderGroupBy();
+    renderFields(currentFields); // Re-render fields to update UI state
+}
+
+// Apply saved filter
+function applySavedFilter(filterConfig) {
+    if (!filterConfig || !Array.isArray(filterConfig)) return;
+    
+    const container = document.getElementById('filtersContainer');
+    container.innerHTML = '';
+    
+    filterConfig.forEach(f => {
+        const filterId = Date.now() + Math.random();
+        let fieldOptions = '<option value="">Select field...</option>';
+        const allFields = currentFields.all_fields || {};
+        Object.entries(allFields).forEach(([id, field]) => {
+            fieldOptions += `<option value="${id}" ${id === f.field ? 'selected' : ''}>${field.label || id}</option>`;
+        });
+        
+        const filterHtml = `
+            <div class="filter-row flex items-center gap-2 p-2 bg-gray-50 rounded-lg dark:bg-gray-700" id="filter_${filterId}">
+                <select class="filter-field rounded border border-gray-300 bg-white p-2 text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                    ${fieldOptions}
+                </select>
+                <select class="filter-operator rounded border border-gray-300 bg-white p-2 text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                    <option value="eq" ${f.operator === 'eq' ? 'selected' : ''}>equals</option>
+                    <option value="ne" ${f.operator === 'ne' ? 'selected' : ''}>not equals</option>
+                    <option value="gt" ${f.operator === 'gt' ? 'selected' : ''}>greater than</option>
+                    <option value="gte" ${f.operator === 'gte' ? 'selected' : ''}>greater or equal</option>
+                    <option value="lt" ${f.operator === 'lt' ? 'selected' : ''}>less than</option>
+                    <option value="lte" ${f.operator === 'lte' ? 'selected' : ''}>less or equal</option>
+                    <option value="like" ${f.operator === 'like' ? 'selected' : ''}>contains</option>
+                    <option value="in" ${f.operator === 'in' ? 'selected' : ''}>in list</option>
+                    <option value="between" ${f.operator === 'between' ? 'selected' : ''}>between</option>
+                </select>
+                <input type="text" class="filter-value rounded border border-gray-300 bg-white p-2 text-sm flex-1 dark:bg-gray-600 dark:border-gray-500 dark:text-white" value="${f.value || ''}" placeholder="Value">
+                <button onclick="removeFilter(${filterId})" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', filterHtml);
+    });
+    
+    // Remove placeholder if exists
+    const placeholder = document.getElementById('filtersPlaceholder');
+    if (placeholder) placeholder.remove();
+}
+</script>
+{% endblock %}

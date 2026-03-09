@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Dashboard Header -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center space-x-4">
+                <a href="{{ url_for('dashboard.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Billing & Payments</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Manage your billing information and view payment history.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Payment History -->
+            <div class="lg:col-span-2">
+                <!-- Current Subscription -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Current Subscription</h3>
+                        <a href="{{ url_for('dashboard.subscription') }}" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                            Manage →
+                        </a>
+                    </div>
+                    {% if subscription and subscription.plan %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-crown text-white"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-white">{{ subscription.plan.name }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">
+                                    ${{ subscription.plan.yearly_price if subscription.billing_cycle == 'yearly' else subscription.plan.monthly_price }}/{{ 'year' if subscription.billing_cycle == 'yearly' else 'month' }}
+                                </p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 text-sm font-medium rounded-full {% if subscription.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+                            {{ subscription.status|title }}
+                        </span>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-6">
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">You don't have an active subscription.</p>
+                        <a href="{{ url_for('public.pricing') }}" class="inline-flex items-center px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-blue-700">
+                            View Plans
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Payment History -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment History</h3>
+                    {% if payments %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200 dark:border-gray-700">
+                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">Date</th>
+                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">Description</th>
+                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">Amount</th>
+                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">Status</th>
+                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">Invoice</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr class="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                    <td class="py-3 px-4 text-sm text-gray-900 dark:text-white">{{ payment.created_at|date }}</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900 dark:text-white">{{ payment.payment_method|title }} Payment</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900 dark:text-white">${{ payment.amount }}</td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-1 text-xs rounded-full {% if payment.status == 'completed' %}bg-green-100 text-green-800{% elif payment.status == 'pending' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                            {{ payment.status|title }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if payment.invoice_url %}
+                                        <a href="{{ payment.invoice_url }}" class="text-blue-600 hover:text-blue-500">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="text-gray-400">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-file-invoice text-gray-400 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-500 dark:text-gray-400">No payment history yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Right Column - Payment Methods -->
+            <div class="space-y-6">
+                <!-- Payment Method -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h3>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded flex items-center justify-center">
+                                <i class="fab fa-cc-visa text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">•••• •••• •••• 4242</p>
+                                <p class="text-sm text-gray-500">Expires 12/25</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                        Update Payment Method
+                    </button>
+                </div>
+                
+                <!-- Billing Address -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Billing Address</h3>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <p>No billing address set</p>
+                    </div>
+                    <button class="mt-4 w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                        Add Billing Address
+                    </button>
+                </div>
+                
+                <!-- Need Help -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Billing Questions?</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Contact our support team for help with billing issues.</p>
+                    <a href="{{ url_for('public.contact') }}" class="inline-flex items-center text-blue-600 hover:text-blue-500 text-sm font-medium">
+                        <i class="fas fa-headset mr-2"></i>
+                        Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

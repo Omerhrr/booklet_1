@@ -1,0 +1,156 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('agents.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Agents</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">Settings</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Agent Settings</h1>
+            <p class="text-gray-500 dark:text-gray-400">Configure automation and audit agents</p>
+        </div>
+    </div>
+
+    {% set automation_config = configurations.get('automation', {}) %}
+    {% set audit_config = configurations.get('audit', {}) %}
+
+    <div class="space-y-6">
+        <!-- Automation Agent Settings -->
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-robot text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Automation Agent</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Bad debt, depreciation, and overdue detection</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full {% if automation_config.get('is_enabled') %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                        {% if automation_config.get('is_enabled') %}Enabled{% else %}Disabled{% endif %}
+                    </span>
+                </div>
+            </div>
+            <form method="POST" class="p-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="agent_type" value="automation">
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Enable Agent</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Allow the agent to run automatically</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="is_enabled" class="sr-only peer" {% if automation_config.get('is_enabled') %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Schedule Automation</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Run automatically on schedule</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="schedule_enabled" class="sr-only peer" {% if automation_config.get('schedule_enabled') %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Audit Agent Settings -->
+        <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-search-dollar text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Audit Agent</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Comprehensive auditing with email reports</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full {% if audit_config.get('is_enabled') %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                        {% if audit_config.get('is_enabled') %}Enabled{% else %}Disabled{% endif %}
+                    </span>
+                </div>
+            </div>
+            <form method="POST" class="p-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="agent_type" value="audit">
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Enable Agent</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Allow the agent to run automatically</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="is_enabled" class="sr-only peer" {% if audit_config.get('is_enabled') %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Schedule Daily Audit</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Run automatically every day at midnight</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="schedule_enabled" class="sr-only peer" {% if audit_config.get('schedule_enabled') %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Send Email Reports</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Email audit reports after each run</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="email_enabled" class="sr-only peer" {% if audit_config.get('email_enabled') %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Recipients</label>
+                        <input type="text" name="email_recipients"
+                               value="{{ audit_config.get('email_recipients', []) | join(', ') if audit_config.get('email_recipients') else '' }}"
+                               placeholder="email1@example.com, email2@example.com"
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        <p class="text-xs text-gray-500 mt-1">Comma-separated email addresses</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

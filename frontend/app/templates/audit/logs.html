@@ -1,0 +1,200 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Audit Logs</h1>
+            <p class="text-gray-500 dark:text-gray-400">Track all system activity and changes</p>
+        </div>
+        <a href="{{ url_for('audit.login_history') }}" class="text-primary-700 hover:text-primary-800 font-medium">
+            <i class="fas fa-sign-in-alt mr-1"></i> View Login History
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    {% if summary %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg dark:bg-blue-900">
+                    <i class="fas fa-list text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Events</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary.get('total_events', 0) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 rounded-lg dark:bg-green-900">
+                    <i class="fas fa-plus-circle text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Created</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary.get('create_count', 0) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-yellow-100 rounded-lg dark:bg-yellow-900">
+                    <i class="fas fa-edit text-yellow-600 dark:text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Updated</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary.get('update_count', 0) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <div class="flex items-center">
+                <div class="p-2 bg-red-100 rounded-lg dark:bg-red-900">
+                    <i class="fas fa-trash text-red-600 dark:text-red-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Deleted</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary.get('delete_count', 0) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow mb-6 p-4 dark:bg-gray-800">
+        <form method="GET" class="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                <input type="date" name="start_date" value="{{ filters.start_date or '' }}"
+                    class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                <input type="date" name="end_date" value="{{ filters.end_date or '' }}"
+                    class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User</label>
+                <select name="user_id" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="">All Users</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}" {% if filters.user_id == user.id|string %}selected{% endif %}>
+                        {{ user.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
+                <select name="action" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="">All Actions</option>
+                    {% for action in available_actions %}
+                    <option value="{{ action }}" {% if filters.action == action %}selected{% endif %}>
+                        {{ action }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resource Type</label>
+                <input type="text" name="resource_type" value="{{ filters.resource_type or '' }}" placeholder="e.g., Invoice, Payment"
+                    class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800 text-sm">
+                    <i class="fas fa-search mr-1"></i> Filter
+                </button>
+                <a href="{{ url_for('audit.audit_logs') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm dark:bg-gray-600 dark:text-gray-300">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">Timestamp</th>
+                        <th class="px-6 py-3">User</th>
+                        <th class="px-6 py-3">Action</th>
+                        <th class="px-6 py-3">Resource</th>
+                        <th class="px-6 py-3">Description</th>
+                        <th class="px-6 py-3">IP Address</th>
+                        <th class="px-6 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-gray-900 dark:text-white">{{ log.get('timestamp', '')[:10] if log.get('timestamp') else '-' }}</div>
+                            <div class="text-xs text-gray-500">{{ log.get('timestamp', '')[11:19] if log.get('timestamp') and log.get('timestamp')|length > 11 else '' }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if log.get('user_id') %}
+                            <a href="{{ url_for('audit.user_history', user_id=log.get('user_id')) }}" class="text-primary-600 hover:underline">
+                                {{ log.get('username') or 'System' }}
+                            </a>
+                            {% else %}
+                            <span class="text-gray-500">System</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% set action = log.get('action', '') %}
+                            {% set action_colors = {
+                                'CREATE': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                                'UPDATE': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+                                'DELETE': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+                                'LOGIN': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+                                'LOGOUT': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+                                'VIEW': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+                                'EXPORT': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+                                'PRINT': 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300'
+                            } %}
+                            <span class="px-2.5 py-0.5 rounded text-xs font-medium {{ action_colors.get(action, 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300') }}">
+                                {{ action }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if log.get('resource_type') %}
+                            <a href="{{ url_for('audit.resource_history', resource_type=log.get('resource_type'), resource_id=log.get('resource_id', 0)) }}" class="text-primary-600 hover:underline">
+                                {{ log.get('resource_type') }}
+                            </a>
+                            {% if log.get('resource_id') %}
+                            <span class="text-gray-400">#{{ log.get('resource_id') }}</span>
+                            {% endif %}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 max-w-xs truncate" title="{{ log.get('description', '') }}">
+                            {{ log.get('description') or '-' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                            {{ log.get('ip_address') or '-' }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <a href="{{ url_for('audit.log_detail', log_id=log.get('id')) }}" class="font-medium text-primary-600 dark:text-primary-500 hover:underline">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-clipboard-list text-4xl mb-2 text-gray-300 dark:text-gray-600"></i>
+                            <p>No audit logs found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
