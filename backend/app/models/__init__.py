@@ -136,7 +136,7 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     is_superuser = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
-    business_id = Column(Integer, ForeignKey('businesses.id', ondelete='CASCADE'), nullable=False)
+    business_id = Column(Integer, ForeignKey('businesses.id', ondelete='CASCADE'), nullable=True)  # None for website admins
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
