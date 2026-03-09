@@ -633,6 +633,37 @@ def get_blog_post(slug: str, db: Session = Depends(get_db)):
     }
 
 
+@router.get("/blog/id/{post_id}")
+def get_blog_post_by_id(post_id: int, db: Session = Depends(get_db)):
+    """Get a single blog post by ID (for admin editing)"""
+    post = db.query(BlogPost).filter(BlogPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    return {
+        "post": {
+            "id": post.id,
+            "title": post.title,
+            "slug": post.slug,
+            "excerpt": post.excerpt,
+            "content": post.content,
+            "featured_image": post.featured_image,
+            "category": post.category,
+            "tags": json.loads(post.tags) if post.tags else [],
+            "is_published": post.is_published,
+            "published_at": post.published_at.isoformat() if post.published_at else None,
+            "view_count": post.view_count,
+            "meta_title": post.meta_title,
+            "meta_description": post.meta_description,
+            "author": {
+                "id": post.author.id,
+                "name": post.author.full_name
+            } if post.author else None,
+            "created_at": post.created_at.isoformat()
+        }
+    }
+
+
 @router.post("/blog")
 def create_blog_post(data: BlogPostCreate, author_id: int = 1, db: Session = Depends(get_db)):
     """Create a new blog post"""
