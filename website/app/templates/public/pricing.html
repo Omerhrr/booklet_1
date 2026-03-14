@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Pricing Hero -->
+<section class="hero-gradient py-12 sm:py-16 md:py-20">
+    <div class="max-w-screen-xl mx-auto px-4 text-center">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">
+            Simple, Transparent Pricing
+        </h1>
+        <p class="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
+            Choose the plan that's right for your business. All plans include a 14-day free trial.
+        </p>
+        
+        <!-- Billing Toggle -->
+        <div class="flex items-center justify-center gap-4 mt-8" x-data="{ yearly: false }">
+            <span class="text-gray-300" :class="{ 'text-white font-medium': !yearly }">Monthly</span>
+            <button @click="yearly = !yearly" class="relative w-14 h-8 bg-gray-600 rounded-full transition-colors" :class="{ 'bg-blue-600': yearly }">
+                <span class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform" :class="{ 'translate-x-6': yearly }"></span>
+            </button>
+            <span class="text-gray-300" :class="{ 'text-white font-medium': yearly }">
+                Yearly <span class="text-green-400 text-sm">(Save 17%)</span>
+            </span>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Cards -->
+<section class="py-12 sm:py-16 md:py-20 bg-gray-50 dark:bg-gray-800">
+    <div class="max-w-screen-xl mx-auto px-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 -mt-20 sm:-mt-24 md:-mt-32">
+            {% for plan in plans %}
+            <div class="bg-white dark:bg-gray-900 rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl border {% if plan.slug == 'premium' %}border-blue-500 ring-2 ring-blue-500{% else %}border-gray-200 dark:border-gray-700{% endif %} relative card-hover transition-all duration-300">
+                {% if plan.slug == 'premium' %}
+                <div class="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 rounded-full whitespace-nowrap">
+                        Most Popular
+                    </span>
+                </div>
+                {% endif %}
+                
+                {% if plan.slug == 'enterprise' %}
+                <div class="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-gradient-to-r from-gray-700 to-gray-900 text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 rounded-full whitespace-nowrap">
+                        Enterprise
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mb-4 sm:mb-6 pt-2">
+                    <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">{{ plan.name }}</h3>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+                        {% if plan.slug == 'basic' %}For small businesses{% endif %}
+                        {% if plan.slug == 'premium' %}For growing businesses{% endif %}
+                        {% if plan.slug == 'advanced' %}For larger teams{% endif %}
+                        {% if plan.slug == 'enterprise' %}For large organizations{% endif %}
+                    </p>
+                    <div class="flex items-baseline justify-center gap-1">
+                        <span class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white" x-data="{ yearly: false }" x-init="yearly = window.location.search.includes('yearly')" x-text="yearly ? '{{ plan.yearly_price | currency }}' : '{{ plan.monthly_price | currency }}'">{{ plan.monthly_price | currency }}</span>
+                        <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">/{% if request.args.get('yearly') %}year{% else %}month{% endif %}</span>
+                    </div>
+                </div>
+                
+                <ul class="space-y-2 sm:space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span><strong>{{ plan.max_branches }}</strong> Branch{% if plan.max_branches > 1 or plan.max_branches == 'Unlimited' %}es{% endif %}</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span><strong>{{ plan.max_users }}</strong> Users</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        {% if plan.includes_agents %}
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% else %}
+                        <i class="fas fa-times text-gray-300 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% endif %}
+                        <span>AI Agents & Automation</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span>Double-Entry Accounting</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span>Inventory Management</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span>Sales & Purchases</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span>Reports & Analytics</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        <span>HR & Payroll</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        {% if plan.slug in ['advanced', 'enterprise'] %}
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% else %}
+                        <i class="fas fa-times text-gray-300 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% endif %}
+                        <span>Priority Support</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        {% if plan.slug == 'enterprise' %}
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% else %}
+                        <i class="fas fa-times text-gray-300 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% endif %}
+                        <span>Custom Integrations</span>
+                    </li>
+                    <li class="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        {% if plan.slug == 'enterprise' %}
+                        <i class="fas fa-check text-green-500 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% else %}
+                        <i class="fas fa-times text-gray-300 mr-2 sm:mr-3 w-4 sm:w-5"></i>
+                        {% endif %}
+                        <span>SLA Guarantee</span>
+                    </li>
+                </ul>
+                
+                <a href="{% if plan.slug == 'enterprise' %}{{ url_for('public.contact') }}{% else %}{{ url_for('auth.register', plan=plan.slug) }}{% endif %}" 
+                   class="block w-full text-center py-2.5 sm:py-3 rounded-lg text-sm font-medium transition-all duration-300
+                          {% if plan.slug == 'premium' %}
+                          bg-gradient-to-r from-sky-500 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-700
+                          {% elif plan.slug == 'enterprise' %}
+                          bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100
+                          {% else %}
+                          border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-500 hover:text-blue-600
+                          {% endif %}">
+                    {% if plan.slug == 'enterprise' %}Contact Sales{% else %}Start Free Trial{% endif %}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Comparison -->
+<section class="py-12 sm:py-16 md:py-20 bg-white dark:bg-gray-900">
+    <div class="max-w-screen-xl mx-auto px-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-center mb-8 sm:mb-12">
+            Feature Comparison
+        </h2>
+        
+        <div class="overflow-x-auto -mx-4 px-4">
+            <table class="w-full text-xs sm:text-sm min-w-[600px]">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                        <th class="text-left py-4 px-4 font-semibold text-gray-900 dark:text-white">Feature</th>
+                        {% for plan in plans %}
+                        <th class="text-center py-4 px-4 font-semibold text-gray-900 dark:text-white">{{ plan.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-gray-100 dark:border-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Branches</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4 text-gray-900 dark:text-white font-medium">{{ plan.max_branches }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Users</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4 text-gray-900 dark:text-white font-medium">{{ plan.max_users }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Double-Entry Accounting</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4"><i class="fas fa-check text-green-500"></i></td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Inventory Management</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4"><i class="fas fa-check text-green-500"></i></td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Sales & Purchases</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4"><i class="fas fa-check text-green-500"></i></td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">HR & Payroll</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4"><i class="fas fa-check text-green-500"></i></td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Reports & Analytics</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4"><i class="fas fa-check text-green-500"></i></td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300 font-medium">AI Agents</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4">
+                            {% if plan.includes_agents %}
+                            <i class="fas fa-check text-green-500"></i>
+                            {% else %}
+                            <i class="fas fa-times text-gray-300"></i>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Doc Wizard</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4">
+                            {% if plan.includes_agents %}
+                            <i class="fas fa-check text-green-500"></i>
+                            {% else %}
+                            <i class="fas fa-times text-gray-300"></i>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Priority Support</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4">
+                            {% if plan.slug in ['advanced', 'enterprise'] %}
+                            <i class="fas fa-check text-green-500"></i>
+                            {% else %}
+                            <i class="fas fa-times text-gray-300"></i>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">API Access</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4">
+                            {% if plan.slug in ['advanced', 'enterprise'] %}
+                            <i class="fas fa-check text-green-500"></i>
+                            {% else %}
+                            <i class="fas fa-times text-gray-300"></i>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">Custom Integrations</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4">
+                            {% if plan.slug == 'enterprise' %}
+                            <i class="fas fa-check text-green-500"></i>
+                            {% else %}
+                            <i class="fas fa-times text-gray-300"></i>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">SLA Guarantee</td>
+                        {% for plan in plans %}
+                        <td class="text-center py-4 px-4">
+                            {% if plan.slug == 'enterprise' %}
+                            <i class="fas fa-check text-green-500"></i>
+                            {% else %}
+                            <i class="fas fa-times text-gray-300"></i>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-12 sm:py-16 md:py-20 bg-gray-50 dark:bg-gray-800">
+    <div class="max-w-screen-xl mx-auto px-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-center mb-8 sm:mb-12">
+            Frequently Asked Questions
+        </h2>
+        
+        <div class="max-w-3xl mx-auto space-y-3 sm:space-y-4">
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700" x-data="{ open: false }">
+                <button @click="open = !open" class="w-full text-left px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Can I change my plan later?</span>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform text-sm" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="px-4 sm:px-6 pb-4">
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Yes! You can upgrade or downgrade your plan at any time. When upgrading, you'll be charged the prorated difference. When downgrading, the new rate applies at your next billing cycle.</p>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700" x-data="{ open: false }">
+                <button @click="open = !open" class="w-full text-left px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">What happens after my trial ends?</span>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform text-sm" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="px-4 sm:px-6 pb-4">
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">After your 14-day trial, you'll need to add a payment method to continue using Booklet. Your data will be preserved, and you can continue right where you left off.</p>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700" x-data="{ open: false }">
+                <button @click="open = !open" class="w-full text-left px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">What payment methods do you accept?</span>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform text-sm" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="px-4 sm:px-6 pb-4">
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">We accept all major credit cards (Visa, Mastercard, American Express) and PayPal. For Enterprise plans, we can also arrange invoicing.</p>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700" x-data="{ open: false }">
+                <button @click="open = !open" class="w-full text-left px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Can I cancel my subscription?</span>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform text-sm" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="px-4 sm:px-6 pb-4">
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period. We'll keep your data for 30 days in case you change your mind.</p>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700" x-data="{ open: false }">
+                <button @click="open = !open" class="w-full text-left px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                    <span class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">What are AI Agents?</span>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform text-sm" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="px-4 sm:px-6 pb-4">
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">AI Agents are intelligent automation tools that help run your business. They include an Automation Agent for tasks like bad debt analysis and depreciation, an Audit Agent for comprehensive business auditing, and a Doc Wizard that guides you through fixing accounting mistakes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-sky-500 to-cyan-500">
+    <div class="max-w-screen-xl mx-auto px-4 text-center">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
+            Ready to get started?
+        </h2>
+        <p class="text-base sm:text-lg md:text-xl text-white/80 mb-6 sm:mb-8 max-w-2xl mx-auto">
+            Start your 14-day free trial today. No credit card required.
+        </p>
+        <a href="{{ url_for('auth.register') }}" class="inline-block px-6 sm:px-8 py-3 sm:py-4 bg-white text-gray-900 font-semibold rounded-xl hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base">
+            Start Free Trial <i class="fas fa-arrow-right ml-2"></i>
+        </a>
+    </div>
+</section>
+{% endblock %}

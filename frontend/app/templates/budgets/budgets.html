@@ -1,0 +1,123 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}Budgets{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Budgets</h1>
+            <p class="text-gray-500 dark:text-gray-400">Manage annual budgets and track performance</p>
+        </div>
+        <a href="{{ url_for('budgets.new_budget') }}"
+           class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700">
+            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            New Budget
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <form method="GET" action="{{ url_for('budgets.list_budgets') }}" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fiscal Year</label>
+                <select name="fiscal_year" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="">All Years</option>
+                    {% for year in fiscal_years %}
+                    <option value="{{ year }}" {% if selected_year == year|string %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700">
+                    Filter
+                </button>
+                <a href="{{ url_for('budgets.list_budgets') }}" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Budgeted Amount</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_budgeted|currency }}</p>
+            </div>
+            <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                    <path fill-rule="evenodd" d="M2 8v6a2 2 0 002 2h12a2 2 0 002-2V8H2zm2 2a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budgets Grid -->
+    {% if budgets %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for budget in budgets %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
+            <div class="p-5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <a href="{{ url_for('budgets.view_budget', budget_id=budget.id) }}" class="hover:text-primary-600 dark:hover:text-primary-500">
+                                {{ budget.name }}
+                            </a>
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">FY {{ budget.fiscal_year }}</p>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded text-xs font-medium {% if budget.is_active %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                        {% if budget.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                
+                <div class="mt-4">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Budgeted</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ budget.total_budgeted|currency }}</p>
+                </div>
+                
+                <div class="mt-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>{{ budget.total_items }} line items</span>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <a href="{{ url_for('budgets.view_budget', budget_id=budget.id) }}" 
+                       class="text-primary-600 dark:text-primary-500 hover:underline text-sm font-medium">
+                        View Details
+                    </a>
+                    <a href="{{ url_for('budgets.budget_vs_actual', budget_id=budget.id) }}" 
+                       class="text-purple-600 dark:text-purple-500 hover:underline text-sm font-medium">
+                        vs Actual
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+            <path fill-rule="evenodd" d="M2 8v6a2 2 0 002 2h12a2 2 0 002-2V8H2zm2 2a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No budgets yet</h3>
+        <p class="mt-2 text-gray-500 dark:text-gray-400">Get started by creating your first budget.</p>
+        <a href="{{ url_for('budgets.new_budget') }}" 
+           class="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg">
+            Create Budget
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

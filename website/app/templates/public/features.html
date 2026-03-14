@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-white dark:bg-gray-900">
+    <!-- Hero -->
+    <div class="bg-gradient-to-br from-blue-600 to-cyan-700 text-white py-12 sm:py-16 md:py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">Powerful Features for Modern Businesses</h1>
+            <p class="text-base sm:text-lg md:text-xl text-blue-100 max-w-3xl mx-auto">
+                Everything you need to manage your business efficiently in one integrated platform.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Features Grid -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <!-- Feature Cards -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-calculator text-sky-500 dark:text-cyan-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">Core Accounting</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Complete double-entry accounting with chart of accounts, journal entries, and financial statements. Track every transaction with precision.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-file-invoice text-green-600 dark:text-green-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">Invoicing & Billing</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Create professional invoices, track payments, and manage receivables. Automatic payment reminders and overdue tracking.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-cyan-100 dark:bg-cyan-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-boxes text-cyan-600 dark:text-cyan-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">Inventory Management</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Track stock levels, manage warehouses, and automate reorder points. Real-time inventory valuation and stock adjustments.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-users text-orange-600 dark:text-orange-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">CRM</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Manage customer relationships, track interactions, and maintain detailed contact histories. Sales pipeline and lead tracking.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-pink-100 dark:bg-pink-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-chart-pie text-pink-600 dark:text-pink-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">Reports & Analytics</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Comprehensive reporting suite with profit & loss, balance sheet, cash flow, and custom reports. Visual dashboards and insights.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-cyan-100 dark:bg-cyan-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-robot text-cyan-600 dark:text-cyan-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">AI Agents</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Intelligent automation with AI-powered agents for bad debt analysis, depreciation scheduling, and report generation.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-red-100 dark:bg-red-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-building text-red-600 dark:text-red-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">Fixed Assets</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Track and manage fixed assets with automatic depreciation calculations. Support for multiple depreciation methods.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-100 dark:bg-indigo-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-user-tie text-indigo-600 dark:text-indigo-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">HR & Payroll</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Employee management, payroll processing, and leave tracking. Generate payslips and manage deductions automatically.
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 sm:p-6 md:p-8">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-teal-100 dark:bg-teal-900 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-tags text-teal-600 dark:text-teal-400 text-xl sm:text-2xl"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">Multi-Branch</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Manage multiple branches and locations from a single account. Branch-level reporting and consolidated financial statements.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CTA -->
+    <div class="bg-gray-50 dark:bg-gray-800 py-12 sm:py-16">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">Ready to get started?</h2>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 sm:mb-8">Start your free trial today. No credit card required.</p>
+            <a href="{{ url_for('auth.register') }}" class="inline-flex items-center px-6 sm:px-8 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 text-sm sm:text-base">
+                Start Free Trial <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

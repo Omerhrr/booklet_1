@@ -1,0 +1,148 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Edit Plan - Admin{% endblock %}
+{% block page_title %}Edit {{ plan.name }} Plan{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('admin.plans_list') }}" class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Plans
+        </a>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <form method="POST" class="p-6 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Basic Info -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <i class="fas fa-info-circle mr-2 text-sky-500"></i>Basic Information
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan Name</label>
+                        <input type="text" name="name" value="{{ plan.name }}" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (URL identifier)</label>
+                        <input type="text" name="slug" value="{{ plan.slug }}" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 bg-gray-100 dark:bg-gray-600" readonly>
+                        <p class="mt-1 text-xs text-gray-500">Slug cannot be changed</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+                    <input type="number" name="display_order" value="{{ plan.display_order or 0 }}" min="0"
+                           class="w-32 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500">
+                    <p class="mt-1 text-xs text-gray-500">Lower numbers appear first</p>
+                </div>
+            </div>
+            
+            <!-- Limits -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <i class="fas fa-sliders-h mr-2 text-green-500"></i>Plan Limits
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Branches</label>
+                        <input type="number" name="max_branches" value="{{ plan.max_branches }}" min="1" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500">
+                        <p class="mt-1 text-xs text-gray-500">Use 999999 for unlimited</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Users</label>
+                        <input type="number" name="max_users" value="{{ plan.max_users }}" min="1" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500">
+                        <p class="mt-1 text-xs text-gray-500">Use 999999 for unlimited</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" name="includes_agents" id="includes_agents" 
+                           {% if plan.includes_agents %}checked{% endif %}
+                           class="w-4 h-4 text-sky-600 bg-gray-100 border-gray-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="includes_agents" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        Includes AI Agents (also enables AI features, Analytics Hub, HR & Payroll)
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Pricing -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <i class="fas fa-dollar-sign mr-2 text-yellow-500"></i>Pricing
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Price ($)</label>
+                        <input type="number" name="monthly_price" value="{{ plan.monthly_price }}" min="0" step="0.01" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500">
+                        <p class="mt-1 text-xs text-gray-500">Use 0 for free</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Yearly Price ($)</label>
+                        <input type="number" name="yearly_price" value="{{ plan.yearly_price }}" min="0" step="0.01" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500">
+                        <p class="mt-1 text-xs text-gray-500">Typically 2 months free (10x monthly)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <i class="fas fa-list mr-2 text-purple-500"></i>Features List
+                </h3>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (one per line)</label>
+                    <textarea name="features" rows="6" 
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500"
+                              placeholder="Core Accounting&#10;Invoicing&#10;Reports&#10;CRM&#10;Inventory">{% if plan.features %}{% for feature in plan.features %}{{ feature }}
+{% endfor %}{% endif %}</textarea>
+                </div>
+            </div>
+            
+            <!-- Status -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <i class="fas fa-toggle-on mr-2 text-blue-500"></i>Status
+                </h3>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_active" id="is_active" 
+                           {% if plan.is_active %}checked{% endif %}
+                           class="w-4 h-4 text-sky-600 bg-gray-100 border-gray-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="is_active" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        Plan is active and available for subscription
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('admin.plans_list') }}" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mr-2">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-save mr-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

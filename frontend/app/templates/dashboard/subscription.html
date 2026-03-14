@@ -1,0 +1,182 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}Subscription{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Current Plan -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Current Plan</h2>
+        
+        {% if subscription %}
+        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 rounded-xl">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ subscription.plan.name if subscription.plan else 'Basic' }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Status: 
+                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if subscription.status == 'active' else 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">
+                        {{ subscription.status|title }}
+                    </span>
+                </p>
+                {% if subscription.current_period_end %}
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Renews: {{ subscription.current_period_end }}
+                </p>
+                {% endif %}
+            </div>
+            <div class="text-right">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                    ${{ subscription.plan.monthly_price if subscription.plan else '29' }}<span class="text-sm font-normal text-gray-500">/mo</span>
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <p class="text-gray-600 dark:text-gray-400">No active subscription</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Usage Stats -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Usage</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Branches -->
+            <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Branches</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ usage.branches.used if usage and usage.branches else 0 }}/{{ usage.branches.limit if usage and usage.branches else plan_limits.max_branches }}
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    {% set branch_percent = (usage.branches.used / usage.branches.limit * 100) if usage and usage.branches and usage.branches.limit > 0 else 0 %}
+                    <div class="bg-primary-600 h-2 rounded-full" style="width: {{ [branch_percent, 100]|min }}%"></div>
+                </div>
+                {% if usage and usage.branches and usage.branches.used >= usage.branches.limit %}
+                <p class="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                    <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Limit reached - upgrade to add more
+                </p>
+                {% endif %}
+            </div>
+            
+            <!-- Users -->
+            <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Users</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ usage.users.used if usage and usage.users else 0 }}/{{ usage.users.limit if usage and usage.users else plan_limits.max_users }}
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    {% set user_percent = (usage.users.used / usage.users.limit * 100) if usage and usage.users and usage.users.limit > 0 else 0 %}
+                    <div class="bg-primary-600 h-2 rounded-full" style="width: {{ [user_percent, 100]|min }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Plans -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Available Plans</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for plan in plans %}
+            {% if plan.slug != 'enterprise' %}
+            <div class="relative border {{ 'border-primary-500 ring-2 ring-primary-500' if subscription and subscription.plan and subscription.plan.id == plan.id else 'border-gray-200 dark:border-gray-700' }} rounded-2xl p-6">
+                {% if plan.slug == 'premium' %}
+                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-gradient-to-r from-primary-600 to-purple-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                        Most Popular
+                    </span>
+                </div>
+                {% endif %}
+                
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ plan.name }}</h3>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ plan.monthly_price }}<span class="text-sm font-normal text-gray-500">/mo</span>
+                </p>
+                
+                <ul class="mt-4 space-y-2">
+                    <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ plan.max_branches }} branch{{ 'es' if plan.max_branches != 1 else '' }}
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ plan.max_users }} users
+                    </li>
+                    {% if plan.includes_agents %}
+                    <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        AI Agents & Automation
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Analytics Hub
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        HR & Payroll
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Budgets & Fixed Assets
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                {% if subscription and subscription.plan and subscription.plan.id == plan.id %}
+                <button disabled class="mt-6 w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-medium rounded-xl cursor-not-allowed">
+                    Current Plan
+                </button>
+                {% else %}
+                <button onclick="upgradePlan('{{ plan.slug }}')" class="mt-6 w-full py-2 px-4 {{ 'bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700' if plan.slug == 'premium' else 'bg-primary-600 hover:bg-primary-700' }} text-white font-medium rounded-xl transition">
+                    {% if subscription and subscription.plan and subscription.plan.monthly_price < plan.monthly_price %}Upgrade{% else %}Select{% endif %}
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        
+        <!-- Enterprise CTA -->
+        <div class="mt-6 p-6 bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 rounded-2xl text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold">Need more?</h3>
+                    <p class="text-gray-300 mt-1">Enterprise plan with unlimited branches, users, and custom integrations.</p>
+                </div>
+                <a href="mailto:support@booklet.com" class="px-6 py-2 bg-white text-gray-900 font-medium rounded-xl hover:bg-gray-100 transition">
+                    Contact Sales
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function upgradePlan(planSlug) {
+    if (confirm(`Are you sure you want to upgrade to the ${planSlug} plan?`)) {
+        // Redirect to payment page or process upgrade
+        window.location.href = `/api/v1/saas/checkout?plan=${planSlug}`;
+    }
+}
+</script>
+{% endblock %}

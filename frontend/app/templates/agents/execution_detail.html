@@ -1,0 +1,131 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('agents.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">Agents</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">Execution #{{ execution.id }}</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                {{ execution.agent_type | title }} Execution
+            </h1>
+        </div>
+        <span class="px-3 py-1 rounded-full
+            {% if execution.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+            {% elif execution.status == 'running' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+            {% elif execution.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+            {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+            {{ execution.status | title }}
+        </span>
+    </div>
+
+    <!-- Execution Info -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Started</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ execution.started_at[:16] | replace('T', ' ') if execution.started_at else '-' }}
+            </p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ execution.completed_at[:16] | replace('T', ' ') if execution.completed_at else '-' }}
+            </p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Records Processed</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ execution.records_processed }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 dark:bg-gray-800">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Issues Found</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ execution.records_flagged }}</p>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    {% if execution.result_summary %}
+    <div class="bg-white rounded-lg shadow mb-6 dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-clipboard-list mr-2 text-primary-600"></i> Summary
+            </h2>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-700 dark:text-gray-300">{{ execution.result_summary }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Detailed Results -->
+    {% if execution.result_details %}
+    <div class="bg-white rounded-lg shadow mb-6 dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-chart-bar mr-2 text-primary-600"></i> Detailed Results
+            </h2>
+        </div>
+        <div class="p-4">
+            {% for key, value in execution.result_details.items() %}
+            <div class="mb-4 last:mb-0">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">{{ key | replace('_', ' ') | title }}</h4>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                    {% if value is mapping %}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {% for k, v in value.items() %}
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ k | title }}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ v }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ value }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Error Message -->
+    {% if execution.error_message %}
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+            <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400 mt-0.5 mr-3"></i>
+            <div>
+                <h4 class="font-medium text-red-900 dark:text-red-100">Error</h4>
+                <p class="text-sm text-red-700 dark:text-red-300 mt-1">{{ execution.error_message }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Report -->
+    {% if execution.report_path %}
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-file-pdf mr-2 text-primary-600"></i> Generated Report
+            </h2>
+        </div>
+        <div class="p-4">
+            <a href="/download/audit_reports/{{ execution.report_path.split('/')[-1] }}" 
+               class="inline-flex items-center text-primary-600 hover:underline" target="_blank">
+                <i class="fas fa-download mr-2"></i> Download PDF Report
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

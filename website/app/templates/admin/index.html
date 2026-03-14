@@ -1,0 +1,128 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Dashboard - Booklet{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total Businesses</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.total_businesses if stats else 0 }}</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                <i class="fas fa-building text-sky-500 dark:text-cyan-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.total_users if stats else 0 }}</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-green-600 dark:text-green-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Active Subscriptions</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.active_subscriptions if stats else 0 }}</p>
+            </div>
+            <div class="w-12 h-12 bg-cyan-100 dark:bg-cyan-900 rounded-lg flex items-center justify-center">
+                <i class="fas fa-crown text-cyan-600 dark:text-purple-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">New Contacts</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.new_contacts if stats else 0 }}</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                <i class="fas fa-envelope text-yellow-600 dark:text-yellow-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Recent Registrations -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Registrations</h3>
+            <a href="{{ url_for('admin.users_list') }}" class="text-sky-600 hover:text-sky-500 dark:text-cyan-400 text-sm">View all</a>
+        </div>
+        <div class="space-y-3">
+            {% for reg in registrations %}
+            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ reg.name }}</p>
+                    <p class="text-sm text-gray-500">{{ reg.email }}</p>
+                </div>
+                <span class="text-xs text-gray-500">{{ reg.created_at|date }}</span>
+            </div>
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400 text-sm">No recent registrations.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Recent Contacts -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Contacts</h3>
+            <a href="{{ url_for('admin.contacts_list') }}" class="text-sky-600 hover:text-sky-500 dark:text-cyan-400 text-sm">View all</a>
+        </div>
+        <div class="space-y-3">
+            {% for contact in contacts %}
+            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ contact.name }}</p>
+                    <p class="text-sm text-gray-500">{{ contact.subject }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full {% if contact.status == 'new' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ contact.status|title }}
+                </span>
+            </div>
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400 text-sm">No recent contacts.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <a href="{{ url_for('admin.blog_list') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow">
+        <i class="fas fa-newspaper text-sky-500 dark:text-cyan-400 text-2xl mb-2"></i>
+        <p class="font-medium text-gray-900 dark:text-white">Blog Posts</p>
+        <p class="text-sm text-gray-500">{{ stats.total_posts if stats else 0 }} total</p>
+    </a>
+    <a href="{{ url_for('admin.plans_list') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow">
+        <i class="fas fa-tags text-green-600 dark:text-green-400 text-2xl mb-2"></i>
+        <p class="font-medium text-gray-900 dark:text-white">Plans</p>
+        <p class="text-sm text-gray-500">Manage plans</p>
+    </a>
+    <a href="{{ url_for('admin.users_list') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow">
+        <i class="fas fa-users text-cyan-600 dark:text-purple-400 text-2xl mb-2"></i>
+        <p class="font-medium text-gray-900 dark:text-white">Users</p>
+        <p class="text-sm text-gray-500">Manage users</p>
+    </a>
+    <a href="{{ url_for('admin.content_list') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow">
+        <i class="fas fa-file-alt text-orange-600 dark:text-orange-400 text-2xl mb-2"></i>
+        <p class="font-medium text-gray-900 dark:text-white">Content</p>
+        <p class="text-sm text-gray-500">Website content</p>
+    </a>
+</div>
+{% endblock %}

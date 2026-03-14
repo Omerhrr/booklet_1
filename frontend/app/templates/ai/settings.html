@@ -1,0 +1,365 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Permission Error Banner -->
+    {% if permission_error %}
+    <div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mt-0.5 mr-3"></i>
+            <div class="flex-1">
+                <h4 class="font-medium text-red-900 dark:text-red-100">Permission Required</h4>
+                <p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                    You need AI configuration permissions to access these settings. Click the button below to fix this.
+                </p>
+                <button onclick="fixPermissions()" id="fixPermissionsBtn"
+                        class="mt-3 text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-red-500 dark:hover:bg-red-600">
+                    <i class="fas fa-wrench mr-2"></i>Fix Permissions
+                </button>
+                <span id="fixResult" class="ml-3 text-sm hidden"></span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <nav class="flex mb-2" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url_for('ai.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">AI Assistant</a>
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    </li>
+                    <li>
+                        <span class="text-gray-900 dark:text-white font-medium">Settings</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">AI Settings</h1>
+            <p class="text-gray-500 dark:text-gray-400">Configure AI provider and access settings</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Settings Form -->
+        <div class="lg:col-span-2">
+            <form method="POST" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Provider Selection -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Provider</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Provider *</label>
+                            <select name="provider" id="providerSelect" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                                    onchange="updateProviderInfo()">
+                                {% for provider in providers %}
+                                <option value="{{ provider.id }}" {% if settings.provider == provider.id %}selected{% endif %}>
+                                    {{ provider.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model</label>
+                            <select name="model_name" id="modelSelect"
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                                {% for provider in providers %}
+                                    {% if provider.id == settings.provider %}
+                                        {% for model in provider.models %}
+                                        <option value="{{ model.id }}" {% if settings.model_name == model.id %}selected{% endif %}>
+                                            {{ model.name }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div id="apiKeyField">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <span id="apiKeyLabel">API Key</span>
+                                <span class="text-gray-400 font-normal ml-2">
+                                    {% if settings.configured %}(Leave blank to keep existing){% endif %}
+                                </span>
+                            </label>
+                            <input type="password" name="api_key" id="apiKeyInput"
+                                   placeholder="{% if settings.configured %}••••••••••••••••{% else %}Enter your API key{% endif %}"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <p class="text-xs text-gray-500 mt-1" id="apiKeyHint">Your API key is encrypted and stored securely</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Custom API Endpoint (Optional)</label>
+                            <input type="url" name="api_endpoint" value="{{ settings.api_endpoint or '' }}"
+                                   placeholder="https://api.example.com/v1"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <p class="text-xs text-gray-500 mt-1">Override the default API endpoint if using a custom deployment</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Model Parameters -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Model Parameters</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Tokens</label>
+                            <input type="number" name="max_tokens" value="{{ settings.max_tokens or 4096 }}"
+                                   min="100" max="128000"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <p class="text-xs text-gray-500 mt-1">Maximum response length</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Temperature</label>
+                            <input type="number" name="temperature" value="{{ settings.temperature or 0.7 }}"
+                                   min="0" max="2" step="0.1"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <p class="text-xs text-gray-500 mt-1">0 = focused, 2 = creative</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Rate Limits -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Rate Limits</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Daily Request Limit</label>
+                            <input type="number" name="daily_request_limit" value="{{ settings.daily_request_limit or 1000 }}"
+                                   min="1" max="100000"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monthly Request Limit</label>
+                            <input type="number" name="monthly_request_limit" value="{{ settings.monthly_request_limit or 30000 }}"
+                                   min="1" max="1000000"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature Toggles -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Features</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Enable AI Assistant</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Allow users with permission to use the AI assistant</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_enabled" class="sr-only peer" {% if settings.is_enabled %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Allow Data Access</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Let AI query business data based on user permissions</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="allow_data_access" class="sr-only peer" {% if settings.allow_data_access or settings.allow_data_access is not defined %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex gap-3">
+                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700">
+                        Save Settings
+                    </button>
+                    <a href="{{ url_for('ai.index') }}" class="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Status Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Status</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Configured</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if settings.configured %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                            {% if settings.configured %}Yes{% else %}No{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Enabled</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if settings.is_enabled %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}">
+                            {% if settings.is_enabled %}Active{% else %}Disabled{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Current Provider</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ settings.provider|upper if settings.provider else 'None' }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Info -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <div class="flex items-start">
+                    <i class="fas fa-shield-alt text-blue-600 dark:text-blue-400 mt-0.5 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-blue-900 dark:text-blue-100">Security Features</h4>
+                        <ul class="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
+                            <li>• API keys are encrypted at rest</li>
+                            <li>• Data access is permission-scoped</li>
+                            <li>• Users can only query authorized data</li>
+                            <li>• All requests are logged for audit</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Get API Key Links -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Get API Keys</h3>
+                
+                <div class="space-y-3">
+                    <a href="https://open.bigmodel.cn/" target="_blank" 
+                       class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">Z.ai (GLM)</span>
+                            <span class="ml-2 text-xs text-green-600 dark:text-green-400">No API key required</span>
+                        </div>
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                    </a>
+                    <a href="https://platform.openai.com/api-keys" target="_blank" 
+                       class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">OpenAI</span>
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                    </a>
+                    <a href="https://aistudio.google.com/apikey" target="_blank"
+                       class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Google Gemini</span>
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                    </a>
+                    <a href="https://console.anthropic.com/settings/keys" target="_blank"
+                       class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Anthropic Claude</span>
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const providers = {{ providers | tojson | safe }};
+
+function updateProviderInfo() {
+    const selectedProvider = document.getElementById('providerSelect').value;
+    const modelSelect = document.getElementById('modelSelect');
+    const apiKeyField = document.getElementById('apiKeyField');
+    const apiKeyLabel = document.getElementById('apiKeyLabel');
+    const apiKeyHint = document.getElementById('apiKeyHint');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    
+    // Clear current options
+    modelSelect.innerHTML = '';
+    
+    // Find provider data
+    const providerData = providers.find(p => p.id === selectedProvider);
+    
+    if (providerData && providerData.models) {
+        providerData.models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.id;
+            option.textContent = model.name;
+            if (model.id === providerData.default_model) {
+                option.selected = true;
+            }
+            modelSelect.appendChild(option);
+        });
+        
+        // Update API key field based on provider requirements
+        apiKeyField.style.display = 'block';
+        
+        if (providerData.api_key_optional === true) {
+            // Z.ai - API key is optional
+            apiKeyLabel.innerHTML = 'API Key <span class="text-gray-400 font-normal">(Optional)</span>';
+            apiKeyHint.innerHTML = '<span class="text-green-600 dark:text-green-400">✓ Free access available! </span>' + 
+                (providerData.description || 'API key optional for higher rate limits.');
+            apiKeyInput.removeAttribute('required');
+        } else if (providerData.requires_api_key === false) {
+            // No API key needed
+            apiKeyField.style.display = 'none';
+        } else {
+            // API key required
+            apiKeyLabel.innerHTML = 'API Key <span class="text-red-500">*</span>';
+            apiKeyHint.textContent = 'Your API key is encrypted and stored securely';
+            apiKeyInput.setAttribute('required', 'required');
+        }
+    }
+}
+
+function fixPermissions() {
+    const btn = document.getElementById('fixPermissionsBtn');
+    const result = document.getElementById('fixResult');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Fixing...';
+    
+    fetch('{{ url_for("ai.fix_permissions") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            result.classList.remove('hidden', 'text-red-600');
+            result.classList.add('text-green-600', 'dark:text-green-400');
+            result.textContent = '✓ ' + data.message;
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Fixed!';
+            btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+            btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            // Reload page after 1 second
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            result.classList.remove('hidden', 'text-green-600');
+            result.classList.add('text-red-600', 'dark:text-red-400');
+            result.textContent = '✗ ' + (data.message || 'Failed to fix permissions');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wrench mr-2"></i>Fix Permissions';
+        }
+    })
+    .catch(error => {
+        result.classList.remove('hidden', 'text-green-600');
+        result.classList.add('text-red-600', 'dark:text-red-400');
+        result.textContent = '✗ Error: ' + error.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-wrench mr-2"></i>Fix Permissions';
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProviderInfo();
+});
+</script>
+{% endblock %}

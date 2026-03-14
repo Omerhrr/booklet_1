@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-white dark:bg-gray-900">
+    <!-- Hero -->
+    <div class="bg-gradient-to-br from-blue-600 to-cyan-700 text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">About Booklet</h1>
+            <p class="text-xl text-blue-100 max-w-3xl mx-auto">
+                Empowering businesses with smart, simple, and powerful management tools.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Story -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="prose dark:prose-invert max-w-none">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Our Story</h2>
+            <p class="text-gray-600 dark:text-gray-400 text-lg">
+                Booklet was born from a simple idea: business management software should be accessible, affordable, and actually useful. 
+                We saw too many small and medium businesses struggling with complex, expensive tools that required extensive training.
+            </p>
+            <p class="text-gray-600 dark:text-gray-400 text-lg">
+                Founded in 2024, we set out to build a platform that combines powerful accounting, inventory management, CRM, and 
+                business intelligence tools in one intuitive interface. Our mission is to help businesses focus on what they do best 
+                while we handle the numbers.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Values -->
+    <div class="bg-gray-50 dark:bg-gray-800 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">Our Values</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-lightbulb text-sky-500 dark:text-cyan-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Simplicity</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Powerful features that are easy to use and understand.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-shield-alt text-green-600 dark:text-green-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Trust</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Your data is secure and your privacy is our priority.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-cyan-100 dark:bg-cyan-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-rocket text-cyan-600 dark:text-purple-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Innovation</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Continuously improving with AI-powered features.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">Our Team</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="text-center">
+                <div class="w-24 h-24 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user text-white text-3xl"></i>
+                </div>
+                <h3 class="font-bold text-gray-900 dark:text-white">Team Member</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">CEO & Founder</p>
+            </div>
+            <div class="text-center">
+                <div class="w-24 h-24 bg-gradient-to-br from-green-600 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user text-white text-3xl"></i>
+                </div>
+                <h3 class="font-bold text-gray-900 dark:text-white">Team Member</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">CTO</p>
+            </div>
+            <div class="text-center">
+                <div class="w-24 h-24 bg-gradient-to-br from-orange-600 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user text-white text-3xl"></i>
+                </div>
+                <h3 class="font-bold text-gray-900 dark:text-white">Team Member</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Head of Product</p>
+            </div>
+            <div class="text-center">
+                <div class="w-24 h-24 bg-gradient-to-br from-pink-600 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user text-white text-3xl"></i>
+                </div>
+                <h3 class="font-bold text-gray-900 dark:text-white">Team Member</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Head of Support</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

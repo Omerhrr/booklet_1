@@ -1,0 +1,142 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Website Content - Admin{% endblock %}
+{% block page_title %}Website Content{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <p class="text-gray-600 dark:text-gray-400">Manage website content sections like header, footer, homepage, and more.</p>
+    </div>
+    
+    <!-- Content Sections Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Header Section -->
+        <a href="{{ url_for('admin.content_edit', section='header') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-sky-100 dark:bg-sky-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-heading text-sky-600 dark:text-cyan-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Header</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Logo, navigation, branding</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Site name, logo URL, navigation links, announcement bar</p>
+        </a>
+        
+        <!-- Footer Section -->
+        <a href="{{ url_for('admin.content_edit', section='footer') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shoe-prints text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Footer</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Links, social media, copyright</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Footer columns, social links, copyright text, newsletter</p>
+        </a>
+        
+        <!-- Hero Section -->
+        <a href="{{ url_for('admin.content_edit', section='hero') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-star text-purple-600 dark:text-purple-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Hero Section</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Homepage banner</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Headline, subheadline, CTA buttons, background image</p>
+        </a>
+        
+        <!-- Features Section -->
+        <a href="{{ url_for('admin.content_edit', section='features') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-th-large text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Features</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Feature highlights</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Feature cards, icons, descriptions, feature list</p>
+        </a>
+        
+        <!-- About Section -->
+        <a href="{{ url_for('admin.content_edit', section='about') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">About Page</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Company information</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">About text, team members, company story, mission</p>
+        </a>
+        
+        <!-- Contact Section -->
+        <a href="{{ url_for('admin.content_edit', section='contact') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-cyan-100 dark:bg-cyan-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-envelope text-cyan-600 dark:text-cyan-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact Page</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Contact information</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Contact details, address, phone, email, map</p>
+        </a>
+        
+        <!-- Pricing Section -->
+        <a href="{{ url_for('admin.content_edit', section='pricing') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-orange-600 dark:text-orange-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pricing Page</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Pricing page content</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Pricing headline, FAQ, comparison section</p>
+        </a>
+        
+        <!-- SEO Section -->
+        <a href="{{ url_for('admin.content_edit', section='seo') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-search text-pink-600 dark:text-pink-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">SEO Settings</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Meta tags, analytics</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Site meta title, description, Google Analytics, scripts</p>
+        </a>
+        
+        <!-- CTA Section -->
+        <a href="{{ url_for('admin.content_edit', section='cta') }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-bullhorn text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">CTA Sections</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Call-to-action blocks</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Newsletter signup, trial CTA, demo request</p>
+        </a>
+    </div>
+</div>
+{% endblock %}
