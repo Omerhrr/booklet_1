@@ -656,38 +656,63 @@ Always be helpful, accurate, and security-conscious."""
             raise ValueError(f"Unknown AI provider: {settings.provider}")
     
     async def _call_zai(self, settings: AISetting, messages: List[Dict]) -> Dict:
-        """Call z.ai API"""
+        """Call z.ai API using direct HTTP requests"""
         # Default model if not specified
         model = settings.model_name or "glm-4-flash"
-        
+
+        # Get API key (optional for z.ai - has free tier)
+        api_key = self._decrypt_api_key(settings.api_key_encrypted) if settings.api_key_encrypted else None
+
+        # Z.ai uses OpenAI-compatible API format
+        # Endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
+        endpoint = settings.api_endpoint or "https://open.bigmodel.cn/api/paas/v4"
+
         try:
-            from zai_sdk import ZAI
-        except ImportError:
-            # Fallback if SDK not available - use OpenAI-compatible endpoint
-            return await self._call_openai_compatible(
-                endpoint=settings.api_endpoint or "https://open.bigmodel.cn/api/paas/v4",
-                api_key=self._decrypt_api_key(settings.api_key_encrypted) if settings.api_key_encrypted else None,
-                model=model,
-                messages=messages,
-                max_tokens=settings.max_tokens,
-                temperature=float(settings.temperature)
-            )
-        
-        zai = await ZAI.create()
-        
-        completion = await zai.chat.completions.create(
-            messages=messages,
-            model=model,
-            max_tokens=settings.max_tokens,
-            temperature=float(settings.temperature)
-        )
-        
-        return {
-            'content': completion.choices[0].message.content,
-            'prompt_tokens': completion.usage.prompt_tokens if hasattr(completion, 'usage') else 0,
-            'completion_tokens': completion.usage.completion_tokens if hasattr(completion, 'usage') else 0,
-            'total_tokens': completion.usage.total_tokens if hasattr(completion, 'usage') else 0
-        }
+            async with httpx.AsyncClient() as client:
+                headers = {
+                    "Content-Type": "application/json"
+                }
+
+                # Add API key if available (required for higher rate limits)
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+
+                response = await client.post(
+                    f"{endpoint}/chat/completions",
+                    headers=headers,
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "max_tokens": settings.max_tokens,
+                        "temperature": float(settings.temperature)
+                    },
+                    timeout=60.0
+                )
+
+                if response.status_code != 200:
+                    error_detail = response.text
+                    logger.error(f"Z.ai API error: {response.status_code} - {error_detail}")
+                    raise Exception(f"Z.ai API error ({response.status_code}): {error_detail}")
+
+                data = response.json()
+
+                # Extract content from response
+                if 'choices' in data and len(data['choices']) > 0:
+                    content = data['choices'][0].get('message', {}).get('content', '')
+                else:
+                    raise ValueError("Empty response from Z.ai API")
+
+                return {
+                    'content': content,
+                    'prompt_tokens': data.get('usage', {}).get('prompt_tokens', 0),
+                    'completion_tokens': data.get('usage', {}).get('completion_tokens', 0),
+                    'total_tokens': data.get('usage', {}).get('total_tokens', 0)
+                }
+
+        except httpx.TimeoutException:
+            raise Exception("Z.ai API request timed out. Please try again.")
+        except httpx.RequestError as e:
+            raise Exception(f"Z.ai API connection error: {str(e)}")
     
     async def _call_openai(self, settings: AISetting, messages: List[Dict]) -> Dict:
         """Call OpenAI API"""
@@ -810,43 +835,6 @@ Always be helpful, accurate, and security-conscious."""
                 'prompt_tokens': data.get('usage', {}).get('input_tokens', 0),
                 'completion_tokens': data.get('usage', {}).get('output_tokens', 0),
                 'total_tokens': data.get('usage', {}).get('input_tokens', 0) + data.get('usage', {}).get('output_tokens', 0)
-            }
-    
-    async def _call_openai_compatible(
-        self,
-        endpoint: str,
-        api_key: str,
-        model: str,
-        messages: List[Dict],
-        max_tokens: int,
-        temperature: float
-    ) -> Dict:
-        """Call OpenAI-compatible API endpoint"""
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{endpoint}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "max_tokens": max_tokens,
-                    "temperature": temperature
-                },
-                timeout=60.0
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.text}")
-            
-            data = response.json()
-            return {
-                'content': data['choices'][0]['message']['content'],
-                'prompt_tokens': data.get('usage', {}).get('prompt_tokens', 0),
-                'completion_tokens': data.get('usage', {}).get('completion_tokens', 0),
-                'total_tokens': data.get('usage', {}).get('total_tokens', 0)
             }
     
     # ==================== DATA SUMMARY METHODS ====================
