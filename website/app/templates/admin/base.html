@@ -262,11 +262,11 @@
             <div class="p-4 border-t border-slate-700 bg-slate-900/50">
                 <div class="flex items-center">
                     <div class="w-10 h-10 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                        <span class="text-sm font-bold text-white">{{ session.get('name', 'A')[:1]|upper }}</span>
+                        <span class="text-sm font-bold text-white">{{ (session.get('name') or 'A')[:1]|upper }}</span>
                     </div>
                     <div class="ml-3 overflow-hidden sidebar-text">
-                        <p class="text-sm font-medium text-white truncate">{{ session.get('name', 'Admin') }}</p>
-                        <p class="text-xs text-slate-400 truncate">{{ session.get('email', '') }}</p>
+                        <p class="text-sm font-medium text-white truncate">{{ session.get('name') or 'Admin' }}</p>
+                        <p class="text-xs text-slate-400 truncate">{{ session.get('email') or '' }}</p>
                     </div>
                 </div>
             </div>
@@ -365,11 +365,11 @@
                 <div class="p-4 border-t border-slate-700 bg-slate-900/50">
                     <div class="flex items-center">
                         <div class="w-10 h-10 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-xl flex items-center justify-center">
-                            <span class="text-sm font-bold text-white">{{ session.get('name', 'A')[:1]|upper }}</span>
+                            <span class="text-sm font-bold text-white">{{ (session.get('name') or 'A')[:1]|upper }}</span>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-white">{{ session.get('name', 'Admin') }}</p>
-                            <p class="text-xs text-slate-400">{{ session.get('email', '') }}</p>
+                            <p class="text-sm font-medium text-white">{{ session.get('name') or 'Admin' }}</p>
+                            <p class="text-xs text-slate-400">{{ session.get('email') or '' }}</p>
                         </div>
                     </div>
                 </div>
@@ -400,10 +400,10 @@
                     <!-- User dropdown for desktop -->
                     <div class="hidden lg:flex items-center space-x-3 pl-3 border-l border-gray-200">
                         <div class="w-9 h-9 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-xl flex items-center justify-center">
-                            <span class="text-sm font-bold text-white">{{ session.get('name', 'A')[:1]|upper }}</span>
+                            <span class="text-sm font-bold text-white">{{ (session.get('name') or 'A')[:1]|upper }}</span>
                         </div>
                         <div class="text-sm">
-                            <p class="font-medium text-gray-900">{{ session.get('name', 'Admin') }}</p>
+                            <p class="font-medium text-gray-900">{{ session.get('name') or 'Admin' }}</p>
                             <p class="text-gray-500 text-xs">{{ 'Admin' if session.get('is_website_admin') else 'User' }}</p>
                         </div>
                     </div>
