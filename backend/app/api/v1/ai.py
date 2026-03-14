@@ -435,7 +435,7 @@ async def get_available_providers(
                     {"id": "glm-4", "name": "GLM-4 (Standard)"},
                     {"id": "glm-4-air", "name": "GLM-4-Air (Balanced)"},
                     {"id": "glm-4-airx", "name": "GLM-4-AirX"},
-                    {"id": "glm-4-flash", "name": "GLM-4-Flash (Fast, Free)"},
+                    {"id": "glm-4-flash", "name": "GLM-4-Flash (Fast, Free Tier)"},
                     {"id": "glm-4-long", "name": "GLM-4-Long (128K Context)"},
                     {"id": "glm-4v", "name": "GLM-4V (Vision)"},
                     # GLM-Z1 Series (Reasoning)
@@ -444,9 +444,8 @@ async def get_available_providers(
                     {"id": "glm-z1-flash", "name": "GLM-Z1-Flash"},
                 ],
                 "default_model": "glm-4-flash",
-                "requires_api_key": False,
-                "api_key_optional": True,
-                "description": "Z.ai provides free access to GLM models. API key optional for higher rate limits."
+                "requires_api_key": True,
+                "description": "Z.ai GLM models. Get a free API key from https://open.bigmodel.cn/ - offers generous free tier."
             },
             {
                 "id": "openai",

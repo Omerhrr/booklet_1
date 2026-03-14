@@ -660,8 +660,14 @@ Always be helpful, accurate, and security-conscious."""
         # Default model if not specified
         model = settings.model_name or "glm-4-flash"
 
-        # Get API key (optional for z.ai - has free tier)
+        # Get API key - REQUIRED for Z.ai
         api_key = self._decrypt_api_key(settings.api_key_encrypted) if settings.api_key_encrypted else None
+
+        if not api_key:
+            raise Exception(
+                "Z.ai API key is required. Please configure your API key in AI Settings. "
+                "You can get a free API key from https://open.bigmodel.cn/"
+            )
 
         # Z.ai uses OpenAI-compatible API format
         # Endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
@@ -670,12 +676,9 @@ Always be helpful, accurate, and security-conscious."""
         try:
             async with httpx.AsyncClient() as client:
                 headers = {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}"
                 }
-
-                # Add API key if available (required for higher rate limits)
-                if api_key:
-                    headers["Authorization"] = f"Bearer {api_key}"
 
                 response = await client.post(
                     f"{endpoint}/chat/completions",
@@ -692,7 +695,13 @@ Always be helpful, accurate, and security-conscious."""
                 if response.status_code != 200:
                     error_detail = response.text
                     logger.error(f"Z.ai API error: {response.status_code} - {error_detail}")
-                    raise Exception(f"Z.ai API error ({response.status_code}): {error_detail}")
+                    # Parse error message for user-friendly display
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get('error', {}).get('message', error_detail)
+                    except:
+                        error_msg = error_detail
+                    raise Exception(f"Z.ai API error: {error_msg}")
 
                 data = response.json()
 
