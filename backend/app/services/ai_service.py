@@ -461,10 +461,10 @@ class AIService:
                 'message_id': assistant_msg.id,
                 'tokens_used': ai_response.get('total_tokens', 0)
             }, 200
-            
+
         except Exception as e:
             logger.error(f"AI chat error: {e}")
-            
+
             # Save error message
             error_msg = AIMessage(
                 conversation_id=conversation.id,
@@ -475,11 +475,26 @@ class AIService:
             )
             self.db.add(error_msg)
             self.db.commit()
-            
+
+            # Return more specific error for common issues
+            error_str = str(e)
+            if 'API key' in error_str:
+                return {
+                    'error': error_str,
+                    'code': 'API_KEY_REQUIRED',
+                    'details': error_str
+                }, 400
+            elif 'rate limit' in error_str.lower():
+                return {
+                    'error': 'Rate limit exceeded. Please try again later.',
+                    'code': 'RATE_LIMITED',
+                    'details': error_str
+                }, 429
+
             return {
                 'error': 'Failed to get AI response. Please try again.',
                 'code': 'AI_ERROR',
-                'details': str(e)
+                'details': error_str
             }, 500
     
     def _build_system_prompt(self, user_permissions: set, user: User) -> str:

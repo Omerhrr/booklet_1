@@ -232,19 +232,20 @@ async def chat_with_ai(
 ):
     """Send a message to the AI assistant"""
     ai_service = AIService(db)
-    
+
     response, status_code = await ai_service.chat(
         user=current_user,
         message=request.message,
         conversation_id=request.conversation_id
     )
-    
+
     if status_code != 200:
+        # Return the specific error message from the service
         raise HTTPException(
             status_code=status_code,
             detail=response.get('error', 'Failed to get AI response')
         )
-    
+
     return ChatResponse(**response)
 
 
