@@ -663,6 +663,8 @@ Always be helpful, accurate, and security-conscious."""
             return await self._call_zai(settings, messages)
         elif settings.provider == 'openai':
             return await self._call_openai(settings, messages)
+        elif settings.provider == 'openrouter':
+            return await self._call_openrouter(settings, messages)
         elif settings.provider == 'gemini':
             return await self._call_gemini(settings, messages)
         elif settings.provider == 'claude':
@@ -766,6 +768,66 @@ Always be helpful, accurate, and security-conscious."""
                 'completion_tokens': data.get('usage', {}).get('completion_tokens', 0),
                 'total_tokens': data.get('usage', {}).get('total_tokens', 0)
             }
+    
+    async def _call_openrouter(self, settings: AISetting, messages: List[Dict]) -> Dict:
+        """Call OpenRouter API - OpenAI-compatible endpoint with access to many models"""
+        api_key = self._decrypt_api_key(settings.api_key_encrypted) if settings.api_key_encrypted else None
+        
+        if not api_key:
+            raise Exception(
+                "OpenRouter API key is required. Please configure your API key in AI Settings. "
+                "You can get an API key from https://openrouter.ai/keys"
+            )
+        
+        # Default model - free tier available
+        model = settings.model_name or "openai/gpt-4o-mini"
+        
+        # OpenRouter uses OpenAI-compatible API
+        base_url = settings.api_endpoint or "https://openrouter.ai/api/v1"
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://booklet.app",  # Optional, for rankings
+                        "X-Title": "Booklet ERP"  # Optional, for rankings
+                    },
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "max_tokens": settings.max_tokens,
+                        "temperature": float(settings.temperature)
+                    },
+                    timeout=120.0  # Longer timeout for some models
+                )
+                
+                if response.status_code != 200:
+                    error_text = response.text
+                    logger.error(f"OpenRouter API error: {response.status_code} - {error_text}")
+                    raise Exception(f"OpenRouter API error: {error_text}")
+                
+                data = response.json()
+                
+                # Extract content
+                if 'choices' in data and len(data['choices']) > 0:
+                    content = data['choices'][0].get('message', {}).get('content', '')
+                else:
+                    raise ValueError("Empty response from OpenRouter API")
+                
+                return {
+                    'content': content,
+                    'prompt_tokens': data.get('usage', {}).get('prompt_tokens', 0),
+                    'completion_tokens': data.get('usage', {}).get('completion_tokens', 0),
+                    'total_tokens': data.get('usage', {}).get('total_tokens', 0)
+                }
+        
+        except httpx.TimeoutException:
+            raise Exception("OpenRouter API request timed out. Please try again.")
+        except httpx.RequestError as e:
+            raise Exception(f"OpenRouter API connection error: {str(e)}")
     
     async def _call_gemini(self, settings: AISetting, messages: List[Dict]) -> Dict:
         """Call Google Gemini API using google-generativeai package"""

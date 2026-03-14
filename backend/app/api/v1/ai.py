@@ -470,6 +470,30 @@ async def get_available_providers(
                 ],
                 "default_model": "claude-sonnet-4-20250514",
                 "requires_api_key": True
+            },
+            {
+                "id": "openrouter",
+                "name": "OpenRouter",
+                "models": [
+                    # Free models
+                    {"id": "openrouter/auto", "name": "Auto (Let OpenRouter choose best)"},
+                    {"id": "openrouter/auto-r1", "name": "Auto with Reasoning (Free)"},
+                    # Popular free models
+                    {"id": "google/gemini-2.0-flash-exp:free", "name": "Gemini 2.0 Flash (Free)"},
+                    {"id": "meta-llama/llama-3.3-70b-instruct:free", "name": "Llama 3.3 70B (Free)"},
+                    {"id": "qwen/qwen-2.5-72b-instruct:free", "name": "Qwen 2.5 72B (Free)"},
+                    {"id": "deepseek/deepseek-r1:free", "name": "DeepSeek R1 (Free)"},
+                    {"id": "stepfun/step-3.5-flash:free", "name": "Step 3.5 Flash (Free)"},
+                    # Premium models
+                    {"id": "openai/gpt-4o", "name": "GPT-4o via OpenRouter"},
+                    {"id": "anthropic/claude-3.5-sonnet", "name": "Claude 3.5 Sonnet via OpenRouter"},
+                    {"id": "google/gemini-pro", "name": "Gemini Pro via OpenRouter"},
+                    {"id": "meta-llama/llama-3.1-405b-instruct", "name": "Llama 3.1 405B"},
+                    {"id": "deepseek/deepseek-chat", "name": "DeepSeek Chat"},
+                ],
+                "default_model": "openrouter/auto",
+                "requires_api_key": True,
+                "description": "OpenRouter provides access to 200+ AI models. Get an API key from https://openrouter.ai/keys - includes free models!"
             }
         ]
     }
