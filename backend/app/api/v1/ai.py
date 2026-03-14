@@ -420,33 +420,15 @@ async def get_available_providers(
                 "id": "zai",
                 "name": "Z.ai (GLM)",
                 "models": [
-                    # GLM-5 Series (Latest Flagship)
-                    {"id": "glm-5", "name": "GLM-5 (Latest Flagship)"},
-                    # GLM-4.7 Series
+                    {"id": "glm-5", "name": "GLM-5 (Latest)"},
                     {"id": "glm-4.7", "name": "GLM-4.7"},
-                    {"id": "glm-4.7-flash", "name": "GLM-4.7-Flash (Fast)"},
-                    # GLM-4.6 Series
                     {"id": "glm-4.6", "name": "GLM-4.6"},
-                    {"id": "glm-4.6v-flash", "name": "GLM-4.6V-Flash (Vision)"},
-                    # GLM-4.5 Series
+                    {"id": "glm-4.5-air", "name": "GLM-4.5-Air (Recommended)"},
                     {"id": "glm-4.5", "name": "GLM-4.5"},
-                    {"id": "glm-4.5-air", "name": "GLM-4.5-Air (Lightweight)"},
-                    # GLM-4 Series
-                    {"id": "glm-4-plus", "name": "GLM-4-Plus (Advanced)"},
-                    {"id": "glm-4", "name": "GLM-4 (Standard)"},
-                    {"id": "glm-4-air", "name": "GLM-4-Air (Balanced)"},
-                    {"id": "glm-4-airx", "name": "GLM-4-AirX"},
-                    {"id": "glm-4-flash", "name": "GLM-4-Flash (Fast, Free Tier)"},
-                    {"id": "glm-4-long", "name": "GLM-4-Long (128K Context)"},
-                    {"id": "glm-4v", "name": "GLM-4V (Vision)"},
-                    # GLM-Z1 Series (Reasoning)
-                    {"id": "glm-z1-air", "name": "GLM-Z1-Air (Reasoning)"},
-                    {"id": "glm-z1-airx", "name": "GLM-Z1-AirX"},
-                    {"id": "glm-z1-flash", "name": "GLM-Z1-Flash"},
                 ],
-                "default_model": "glm-4-flash",
+                "default_model": "glm-4.5-air",
                 "requires_api_key": True,
-                "description": "Z.ai GLM models. Get a free API key from https://open.bigmodel.cn/ - offers generous free tier."
+                "description": "Z.ai GLM models. Get an API key from https://z.ai/ - requires credits."
             },
             {
                 "id": "openai",
