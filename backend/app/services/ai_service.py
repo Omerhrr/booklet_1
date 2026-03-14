@@ -671,7 +671,7 @@ Always be helpful, accurate, and security-conscious."""
             raise ValueError(f"Unknown AI provider: {settings.provider}")
     
     async def _call_zai(self, settings: AISetting, messages: List[Dict]) -> Dict:
-        """Call z.ai API using direct HTTP requests"""
+        """Call z.ai API using ZaiClient SDK"""
         # Default model if not specified
         model = settings.model_name or "glm-4-flash"
 
@@ -684,59 +684,56 @@ Always be helpful, accurate, and security-conscious."""
                 "You can get a free API key from https://open.bigmodel.cn/"
             )
 
-        # Z.ai uses OpenAI-compatible API format
-        # Endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
-        endpoint = settings.api_endpoint or "https://open.bigmodel.cn/api/paas/v4"
-
         try:
-            async with httpx.AsyncClient() as client:
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}"
-                }
+            # Import ZaiClient from zai package
+            from zai import ZaiClient
+            import asyncio
 
-                response = await client.post(
-                    f"{endpoint}/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "max_tokens": settings.max_tokens,
-                        "temperature": float(settings.temperature)
-                    },
-                    timeout=60.0
+            # Create client with API key
+            client = ZaiClient(api_key=api_key)
+
+            # ZaiClient is synchronous, so we run it in a thread pool
+            def _sync_call():
+                return client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=float(settings.temperature),
+                    max_tokens=settings.max_tokens
                 )
 
-                if response.status_code != 200:
-                    error_detail = response.text
-                    logger.error(f"Z.ai API error: {response.status_code} - {error_detail}")
-                    # Parse error message for user-friendly display
-                    try:
-                        error_data = response.json()
-                        error_msg = error_data.get('error', {}).get('message', error_detail)
-                    except:
-                        error_msg = error_detail
-                    raise Exception(f"Z.ai API error: {error_msg}")
+            # Run synchronous SDK call in executor
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, _sync_call)
 
-                data = response.json()
+            # Extract response content
+            if response.choices and response.choices[0].message:
+                content = response.choices[0].message.content
+            else:
+                raise ValueError("Empty or invalid response from Z.ai API")
 
-                # Extract content from response
-                if 'choices' in data and len(data['choices']) > 0:
-                    content = data['choices'][0].get('message', {}).get('content', '')
-                else:
-                    raise ValueError("Empty response from Z.ai API")
+            # Get token usage if available
+            prompt_tokens = 0
+            completion_tokens = 0
+            total_tokens = 0
+            if hasattr(response, 'usage') and response.usage:
+                prompt_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
+                completion_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
+                total_tokens = getattr(response.usage, 'total_tokens', 0) or 0
 
-                return {
-                    'content': content,
-                    'prompt_tokens': data.get('usage', {}).get('prompt_tokens', 0),
-                    'completion_tokens': data.get('usage', {}).get('completion_tokens', 0),
-                    'total_tokens': data.get('usage', {}).get('total_tokens', 0)
-                }
+            return {
+                'content': content,
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens,
+                'total_tokens': total_tokens
+            }
 
-        except httpx.TimeoutException:
-            raise Exception("Z.ai API request timed out. Please try again.")
-        except httpx.RequestError as e:
-            raise Exception(f"Z.ai API connection error: {str(e)}")
+        except ImportError:
+            logger.error("zai package not installed. Install with: pip install zai-sdk")
+            raise Exception("Z.ai SDK not installed. Please contact your administrator.")
+        except Exception as e:
+            error_str = str(e)
+            logger.error(f"Z.ai API error: {error_str}")
+            raise Exception(f"Z.ai API error: {error_str}")
     
     async def _call_openai(self, settings: AISetting, messages: List[Dict]) -> Dict:
         """Call OpenAI API"""
@@ -771,48 +768,73 @@ Always be helpful, accurate, and security-conscious."""
             }
     
     async def _call_gemini(self, settings: AISetting, messages: List[Dict]) -> Dict:
-        """Call Google Gemini API"""
-        api_key = self._decrypt_api_key(settings.api_key_encrypted)
-        model = settings.model_name or "gemini-2.0-flash"
-        
-        # Convert messages to Gemini format
-        contents = []
-        for msg in messages:
-            role = "user" if msg["role"] in ["user", "system"] else "model"
-            contents.append({
-                "role": role,
-                "parts": [{"text": msg["content"]}]
-            })
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent",
-                headers={
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": api_key
-                },
-                json={
-                    "contents": contents,
-                    "generationConfig": {
-                        "maxOutputTokens": settings.max_tokens,
-                        "temperature": float(settings.temperature)
-                    }
-                },
-                timeout=60.0
+        """Call Google Gemini API using google-generativeai package"""
+        api_key = self._decrypt_api_key(settings.api_key_encrypted) if settings.api_key_encrypted else None
+
+        if not api_key:
+            raise Exception(
+                "Google Gemini API key is required. Please configure your API key in AI Settings. "
+                "You can get an API key from https://makersuite.google.com/app/apikey"
             )
-            
-            if response.status_code != 200:
-                raise Exception(f"Gemini API error: {response.text}")
-            
-            data = response.json()
-            content = data['candidates'][0]['content']['parts'][0]['text']
-            
+
+        model_name = settings.model_name or "gemini-2.0-flash"
+
+        try:
+            # Import google-generativeai
+            import google.generativeai as genai
+            import asyncio
+
+            # Configure the API key
+            genai.configure(api_key=api_key)
+
+            # Create the model
+            model = genai.GenerativeModel(model_name)
+
+            # Convert messages to a single prompt for Gemini
+            # Combine system and user messages
+            prompt_parts = []
+            for msg in messages:
+                role = msg["role"]
+                content = msg["content"]
+                if role == "system":
+                    prompt_parts.append(f"[System]: {content}")
+                elif role == "user":
+                    prompt_parts.append(f"[User]: {content}")
+                elif role == "assistant":
+                    prompt_parts.append(f"[Assistant]: {content}")
+
+            full_prompt = "\n\n".join(prompt_parts)
+
+            # Run synchronous call in executor
+            def _sync_call():
+                return model.generate_content(
+                    full_prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        max_output_tokens=settings.max_tokens,
+                        temperature=float(settings.temperature)
+                    )
+                )
+
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, _sync_call)
+
+            # Extract content
+            content = response.text
+
             return {
                 'content': content,
                 'prompt_tokens': 0,  # Gemini doesn't provide token counts in the same way
                 'completion_tokens': 0,
                 'total_tokens': 0
             }
+
+        except ImportError:
+            logger.error("google-generativeai package not installed. Install with: pip install google-generativeai")
+            raise Exception("Google Gemini SDK not installed. Please contact your administrator.")
+        except Exception as e:
+            error_str = str(e)
+            logger.error(f"Gemini API error: {error_str}")
+            raise Exception(f"Gemini API error: {error_str}")
     
     async def _call_claude(self, settings: AISetting, messages: List[Dict]) -> Dict:
         """Call Anthropic Claude API"""
