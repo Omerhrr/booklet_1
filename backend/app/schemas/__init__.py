@@ -1,14 +1,29 @@
 """
 Pydantic Schemas for API Validation
 """
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import List, Optional
 from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
+import re
+
+
+def validate_password_strength(password: str) -> str:
+    if len(password) < 8:
+        raise ValueError("Password must be at least 8 characters")
+    if not re.search(r"[A-Z]", password):
+        raise ValueError("Password must contain at least one uppercase letter")
+    if not re.search(r"[a-z]", password):
+        raise ValueError("Password must contain at least one lowercase letter")
+    if not re.search(r"[0-9]", password):
+        raise ValueError("Password must contain at least one digit")
+    return password
 
 
 # ==================== ENUMS ====================
+
 
 class AccountTypeEnum(str, Enum):
     ASSET = "Asset"
@@ -25,6 +40,7 @@ class PayFrequencyEnum(str, Enum):
 
 
 # ==================== AUTH SCHEMAS ====================
+
 
 class Token(BaseModel):
     access_token: str
@@ -45,16 +61,29 @@ class SignupRequest(BaseModel):
     business_name: str = Field(..., min_length=2, max_length=255)
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=100)
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8)
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v):
+        validate_password_strength(v)
+        return v
 
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
-    new_password: str = Field(..., min_length=6)
+    new_password: str = Field(..., min_length=8)
     confirm_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v):
+        validate_password_strength(v)
+        return v
 
 
 # ==================== USER SCHEMAS ====================
+
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=100)
@@ -62,8 +91,14 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8)
     is_superuser: bool = False
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v):
+        validate_password_strength(v)
+        return v
 
 
 class UserUpdate(BaseModel):
@@ -78,7 +113,7 @@ class UserResponse(UserBase):
     is_active: bool
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -88,6 +123,7 @@ class UserWithRoles(UserResponse):
 
 
 # ==================== BUSINESS SCHEMAS ====================
+
 
 class BusinessBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -109,11 +145,12 @@ class BusinessResponse(BusinessBase):
     is_vat_registered: bool
     vat_rate: Decimal
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== BRANCH SCHEMAS ====================
+
 
 class BranchBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -136,11 +173,12 @@ class BranchResponse(BranchBase):
     is_active: bool
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== ROLE & PERMISSION SCHEMAS ====================
+
 
 class RoleBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
@@ -163,7 +201,7 @@ class RoleResponse(RoleBase):
     business_id: int
     permission_ids: List[int] = []
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -172,7 +210,7 @@ class PermissionResponse(BaseModel):
     name: str
     category: str
     description: Optional[str] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -183,6 +221,7 @@ class AssignRoleRequest(BaseModel):
 
 
 # ==================== ACCOUNT SCHEMAS ====================
+
 
 class AccountBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -209,7 +248,7 @@ class AccountResponse(AccountBase):
     parent_id: Optional[int]
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -218,6 +257,7 @@ class AccountWithBalance(AccountResponse):
 
 
 # ==================== CUSTOMER SCHEMAS ====================
+
 
 class CustomerBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -249,7 +289,7 @@ class CustomerResponse(CustomerBase):
     business_id: int
     account_balance: Decimal = Decimal("0.00")
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -259,6 +299,7 @@ class CustomerWithBalance(CustomerResponse):
 
 
 # ==================== VENDOR SCHEMAS ====================
+
 
 class VendorBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -288,7 +329,7 @@ class VendorResponse(VendorBase):
     business_id: int
     account_balance: Decimal = Decimal("0.00")
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -298,6 +339,7 @@ class VendorWithBalance(VendorResponse):
 
 
 # ==================== CATEGORY SCHEMAS ====================
+
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -318,11 +360,12 @@ class CategoryResponse(CategoryBase):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== PRODUCT SCHEMAS ====================
+
 
 class ProductBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -359,12 +402,14 @@ class ProductResponse(ProductBase):
     category_id: Optional[int]
     branch_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class StockAdjustmentCreate(BaseModel):
-    quantity_change: Decimal = Field(..., description="Positive for increase, negative for decrease")
+    quantity_change: Decimal = Field(
+        ..., description="Positive for increase, negative for decrease"
+    )
     reason: str = Field(..., min_length=2, max_length=500)
 
 
@@ -375,11 +420,12 @@ class StockAdjustmentResponse(BaseModel):
     reason: str
     user_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== SALES INVOICE SCHEMAS ====================
+
 
 class SalesInvoiceItemBase(BaseModel):
     product_id: int
@@ -395,7 +441,7 @@ class SalesInvoiceItemResponse(SalesInvoiceItemBase):
     id: int
     sales_invoice_id: int
     returned_quantity: Decimal
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -428,7 +474,7 @@ class SalesInvoiceResponse(SalesInvoiceBase):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -441,11 +487,14 @@ class RecordPaymentRequest(BaseModel):
     payment_date: date
     amount: Decimal = Field(..., gt=0)
     payment_account_id: int
-    bank_account_id: Optional[int] = None  # For bank payments, to track which bank account
+    bank_account_id: Optional[int] = (
+        None  # For bank payments, to track which bank account
+    )
     reference: Optional[str] = None
 
 
 # ==================== CREDIT NOTE SCHEMAS ====================
+
 
 class CreditNoteItemCreate(BaseModel):
     original_item_id: int
@@ -463,8 +512,11 @@ class CreditNoteCreate(BaseModel):
 
 class ApplyCreditNoteRequest(BaseModel):
     """Schema for applying a credit note with optional refund"""
-    refund_method: str = 'none'  # 'none', 'customer_balance', 'cash_refund'
-    refund_account_id: Optional[int] = None  # Required if refund_method is 'cash_refund'
+
+    refund_method: str = "none"  # 'none', 'customer_balance', 'cash_refund'
+    refund_account_id: Optional[int] = (
+        None  # Required if refund_method is 'cash_refund'
+    )
     refund_date: Optional[date] = None
 
 
@@ -474,18 +526,19 @@ class CreditNoteResponse(BaseModel):
     credit_note_date: date
     total_amount: Decimal
     reason: Optional[str]
-    status: Optional[str] = 'open'
+    status: Optional[str] = "open"
     refund_amount: Optional[Decimal] = Decimal("0.00")
     refund_method: Optional[str] = None
     refund_date: Optional[date] = None
     sales_invoice_id: int
     customer_id: Optional[int]
     customer_name: str = "N/A"
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== DEBIT NOTE SCHEMAS ====================
+
 
 class DebitNoteItemCreate(BaseModel):
     original_item_id: int
@@ -503,8 +556,11 @@ class DebitNoteCreate(BaseModel):
 
 class ApplyDebitNoteRequest(BaseModel):
     """Schema for applying a debit note with optional refund"""
-    refund_method: str = 'none'  # 'none', 'vendor_balance', 'cash_refund'
-    refund_account_id: Optional[int] = None  # Required if refund_method is 'cash_refund'
+
+    refund_method: str = "none"  # 'none', 'vendor_balance', 'cash_refund'
+    refund_account_id: Optional[int] = (
+        None  # Required if refund_method is 'cash_refund'
+    )
     refund_date: Optional[date] = None
 
 
@@ -514,18 +570,19 @@ class DebitNoteResponse(BaseModel):
     debit_note_date: date
     total_amount: Decimal
     reason: Optional[str]
-    status: Optional[str] = 'open'
+    status: Optional[str] = "open"
     refund_amount: Optional[Decimal] = Decimal("0.00")
     refund_method: Optional[str] = None
     refund_date: Optional[date] = None
     purchase_bill_id: int
     bill_number: str = "N/A"
     vendor_name: str = "N/A"
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== PURCHASE BILL SCHEMAS ====================
+
 
 class PurchaseBillItemBase(BaseModel):
     product_id: int
@@ -541,7 +598,7 @@ class PurchaseBillItemResponse(PurchaseBillItemBase):
     id: int
     purchase_bill_id: int
     returned_quantity: Decimal
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -568,7 +625,7 @@ class PurchaseBillResponse(PurchaseBillBase):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -581,11 +638,14 @@ class RecordBillPaymentRequest(BaseModel):
     payment_date: date
     amount: Decimal = Field(..., gt=0)
     payment_account_id: int
-    bank_account_id: Optional[int] = None  # For bank payments, to track which bank account
+    bank_account_id: Optional[int] = (
+        None  # For bank payments, to track which bank account
+    )
     reference: Optional[str] = None
 
 
 # ==================== EXPENSE SCHEMAS ====================
+
 
 class ExpenseBase(BaseModel):
     expense_date: date
@@ -609,11 +669,12 @@ class ExpenseResponse(ExpenseBase):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== OTHER INCOME SCHEMAS ====================
+
 
 class OtherIncomeBase(BaseModel):
     income_date: date
@@ -637,11 +698,12 @@ class OtherIncomeResponse(OtherIncomeBase):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== EMPLOYEE SCHEMAS ====================
+
 
 class PayrollConfigBase(BaseModel):
     gross_salary: Decimal = Field(..., ge=0)
@@ -660,7 +722,7 @@ class PayrollConfigCreate(PayrollConfigBase):
 class PayrollConfigResponse(PayrollConfigBase):
     id: int
     employee_id: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -696,7 +758,7 @@ class EmployeeResponse(EmployeeBase):
     business_id: int
     termination_date: Optional[date] = None
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -705,6 +767,7 @@ class EmployeeWithPayroll(EmployeeResponse):
 
 
 # ==================== PAYSLIP SCHEMAS ====================
+
 
 class PayslipBase(BaseModel):
     employee_id: int
@@ -737,17 +800,18 @@ class Payslip(PayslipBase):
     pension_employee: Decimal = Decimal("0.00")
     pension_employer: Decimal = Decimal("0.00")
     other_deductions: Decimal = Decimal("0.00")
-    status: str = 'pending'
+    status: str = "pending"
     paid_date: Optional[date] = None
     employee_name: Optional[str] = None
     branch_id: Optional[int] = None
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== BANK ACCOUNT SCHEMAS ====================
+
 
 class BankAccountBase(BaseModel):
     account_name: str = Field(..., min_length=2, max_length=255)
@@ -792,9 +856,9 @@ class FundTransferCreate(BaseModel):
     transfer_date: date
     amount: Decimal = Field(..., gt=0)
     from_account_id: int  # Can be bank account ID or COA account ID for cash
-    to_account_id: int    # Can be bank account ID or COA account ID for cash
+    to_account_id: int  # Can be bank account ID or COA account ID for cash
     from_account_type: Optional[str] = "bank"  # "bank" or "cash"
-    to_account_type: Optional[str] = "bank"    # "bank" or "cash"
+    to_account_type: Optional[str] = "bank"  # "bank" or "cash"
     description: Optional[str] = None
     reference: Optional[str] = None
 
@@ -813,11 +877,12 @@ class FundTransferResponse(BaseModel):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== BUDGET SCHEMAS ====================
+
 
 class BudgetItemBase(BaseModel):
     account_id: int
@@ -832,7 +897,7 @@ class BudgetItemCreate(BudgetItemBase):
 class BudgetItem(BudgetItemBase):
     id: int
     budget_id: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -850,11 +915,12 @@ class BudgetResponse(BudgetBase):
     id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== FIXED ASSET SCHEMAS ====================
+
 
 class FixedAssetBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -880,8 +946,12 @@ class FixedAssetCreate(FixedAssetBase):
     expense_account_id: Optional[int] = None
     branch_id: Optional[int] = None
     # For existing assets - allow specifying accumulated depreciation
-    existing_accumulated_depreciation: Optional[Decimal] = Field(default=Decimal("0.00"), ge=0)
-    is_existing_asset: bool = False  # Flag to indicate this is an existing asset being registered
+    existing_accumulated_depreciation: Optional[Decimal] = Field(
+        default=Decimal("0.00"), ge=0
+    )
+    is_existing_asset: bool = (
+        False  # Flag to indicate this is an existing asset being registered
+    )
     # Fund source account for NEW asset purchases - where money came from (cash/bank/payable)
     fund_source_account_id: Optional[int] = None
 
@@ -919,7 +989,7 @@ class FixedAssetResponse(FixedAssetBase):
     business_id: int
     is_active: bool
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -949,7 +1019,7 @@ class DepreciationRecordResponse(BaseModel):
     description: Optional[str]
     journal_voucher_id: Optional[int]
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -973,6 +1043,7 @@ class WriteOffRequest(BaseModel):
 
 
 # ==================== JOURNAL VOUCHER SCHEMAS ====================
+
 
 class JournalLineCreate(BaseModel):
     account_id: int
@@ -998,11 +1069,12 @@ class JournalVoucherResponse(BaseModel):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== DASHBOARD SCHEMAS ====================
+
 
 class DashboardStats(BaseModel):
     total_sales: Decimal
@@ -1032,6 +1104,7 @@ class DashboardResponse(BaseModel):
 
 # ==================== PAGINATION ====================
 
+
 class PaginatedResponse(BaseModel):
     total: int
     page: int
@@ -1040,6 +1113,7 @@ class PaginatedResponse(BaseModel):
 
 
 # ==================== CASH BOOK SCHEMAS ====================
+
 
 class CashBookEntryBase(BaseModel):
     entry_date: date
@@ -1070,7 +1144,7 @@ class CashBookEntryResponse(CashBookEntryBase):
     branch_id: int
     business_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -1100,6 +1174,7 @@ class CashBookFilter(BaseModel):
 
 class FundAccountRequest(BaseModel):
     """Schema for funding customer/vendor accounts"""
+
     entity_type: str = Field(..., pattern="^(customer|vendor)$")  # customer or vendor
     entity_id: int  # customer_id or vendor_id
     amount: Decimal = Field(..., gt=0)

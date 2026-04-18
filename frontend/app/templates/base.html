@@ -73,7 +73,41 @@
                 event.detail.headers['X-CSRFToken'] = csrfToken;
             }
         });
+
+        // After HTMX boosted swap: execute inline scripts and re-init Alpine
+        document.body.addEventListener('htmx:afterSettle', function(event) {
+            if (event.detail?.pathInfo?.type === 'boosted') {
+                window.scrollTo(0, 0);
+
+                // Execute any <script> tags that came in with the swapped content
+                const target = event.detail.target || document.getElementById('main-content');
+                if (target) {
+                    target.querySelectorAll('script').forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        for (const attr of oldScript.attributes) {
+                            newScript.setAttribute(attr.name, attr.value);
+                        }
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+                }
+
+                // Re-initialize Alpine.js on the new content
+                if (window.Alpine) {
+                    const target = event.detail.target || document.getElementById('main-content');
+                    if (target) {
+                        Alpine.initTree(target);
+                    }
+                }
+            }
+        });
+        });
     </script>
+    <style>
+        #main-content.htmx-swapping { opacity: 0; transition: opacity 0.1s ease-out; }
+        #main-content.htmx-settling { animation: htmx-fade-in 0.15s ease-in; }
+        @keyframes htmx-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    </style>
     
     <!-- Theme Switcher -->
     <script>
@@ -126,6 +160,9 @@
             </script>
         {% endif %}
     {% endwith %}
+    
+    <!-- CDN Fallback Check -->
+    <script src="{{ url_for('static', filename='js/cdn-fallback.js') }}"></script>
     
     {% block extra_scripts %}{% endblock %}
 </body>

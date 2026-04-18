@@ -20,12 +20,12 @@ function showToast(message, type = 'success') {
 
 // Format currency
 function formatCurrency(amount, symbol = '$') {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
+    if (amount == null) return symbol + '0.00';
+    const formatted = parseFloat(amount).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-    }).format(amount).replace('$', symbol);
+    });
+    return symbol + formatted;
 }
 
 // Format date

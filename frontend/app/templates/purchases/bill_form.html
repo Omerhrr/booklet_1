@@ -2,7 +2,7 @@
 
 {% block extra_head %}
 <script>
-document.addEventListener('alpine:init', () => {
+function registerBillForm() {
     Alpine.data('billForm', () => ({
         items: [],
         vendors: {{ vendors | tojson }},
@@ -51,7 +51,12 @@ document.addEventListener('alpine:init', () => {
             form.submit();
         }
     }));
-});
+}
+if (window.Alpine) {
+    registerBillForm();
+} else {
+    document.addEventListener('alpine:init', registerBillForm);
+}
 </script>
 {% endblock %}
 

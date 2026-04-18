@@ -1,0 +1,71 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}Cash Book Entry Detail{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Cash Book Entry</h1>
+            <p class="text-gray-500 dark:text-gray-400">{{ entry.entry_number|default('Detail') }}</p>
+        </div>
+        <a href="{{ url_for('cashbook.cashbook_list') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300">
+            Back to Cash Book
+        </a>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Entry Number</p>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ entry.entry_number|default('-') }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ entry.entry_date|default('-') }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Type</p>
+                    <span class="px-2.5 py-0.5 rounded text-xs font-medium
+                        {% if entry.entry_type == 'receipt' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                        {% elif entry.entry_type == 'payment' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
+                        {% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
+                        {{ entry.entry_type.title() }}
+                    </span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Amount</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (entry.amount|default(0))|currency }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Account</p>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ entry.account_name|default('-') }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Payee / Payer</p>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ entry.payee_payer|default('-') }}</p>
+                </div>
+            </div>
+            {% if entry.description %}
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Description</p>
+                <p class="font-medium text-gray-900 dark:text-white">{{ entry.description }}</p>
+            </div>
+            {% endif %}
+            {% if entry.reference %}
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Reference</p>
+                <p class="font-medium text-gray-900 dark:text-white">{{ entry.reference }}</p>
+            </div>
+            {% endif %}
+            {% if entry.source_type %}
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Source</p>
+                <p class="font-medium text-gray-900 dark:text-white">{{ entry.source_type.replace('_', ' ').title() }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

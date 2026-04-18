@@ -1,0 +1,81 @@
+{% extends "dashboard_layout.html" %}
+
+{% block page_title %}Payroll Summary{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Payroll Summary</h1>
+            <p class="text-gray-500 dark:text-gray-400">Period: {{ pay_period_start }} to {{ pay_period_end }}</p>
+        </div>
+        <a href="{{ url_for('hr.payslips') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-300">
+            View Payslips
+        </a>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <form method="GET" action="{{ url_for('hr.payroll_summary') }}" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period Start</label>
+                <input type="date" name="pay_period_start" value="{{ pay_period_start }}"
+                    class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period End</label>
+                <input type="date" name="pay_period_end" value="{{ pay_period_end }}"
+                    class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 rounded-lg">Update</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Gross</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ (summary.total_gross if summary else 0)|currency }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Deductions</p>
+            <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ (summary.total_deductions if summary else 0)|currency }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Net Pay</p>
+            <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ (summary.total_net if summary else 0)|currency }}</p>
+        </div>
+    </div>
+
+    {% if summary and summary.employees %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">Employee</th>
+                        <th class="px-6 py-3 text-right">Gross</th>
+                        <th class="px-6 py-3 text-right">Deductions</th>
+                        <th class="px-6 py-3 text-right">Net Pay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in summary.employees %}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ emp.full_name }}</td>
+                        <td class="px-6 py-4 text-right">{{ emp.gross_salary|currency }}</td>
+                        <td class="px-6 py-4 text-right text-red-600">{{ emp.total_deductions|currency }}</td>
+                        <td class="px-6 py-4 text-right font-medium">{{ emp.net_salary|currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <p class="text-gray-500 dark:text-gray-400">No payroll data for the selected period.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

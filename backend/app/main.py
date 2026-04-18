@@ -1,6 +1,7 @@
 """
 Main FastAPI Application
 """
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,7 +11,31 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.rate_limit import RateLimitMiddleware
-from app.api.v1 import auth, dashboard, crm, inventory, sales, settings as settings_router, purchases, accounting, hr, banking, expenses, other_incomes, reports, budgets, fixed_assets, cashbook, fiscal_year, reconciliation, audit, analytics, ai, agents, saas
+from app.api.v1 import (
+    auth,
+    dashboard,
+    crm,
+    inventory,
+    sales,
+    settings as settings_router,
+    purchases,
+    accounting,
+    hr,
+    banking,
+    expenses,
+    other_incomes,
+    reports,
+    budgets,
+    fixed_assets,
+    cashbook,
+    fiscal_year,
+    reconciliation,
+    audit,
+    analytics,
+    ai,
+    agents,
+    saas,
+)
 from app.services.permission_service import seed_permissions
 from app.core.database import SessionLocal
 
@@ -25,35 +50,31 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up...")
     init_db()
-    
+
     # Seed permissions
     db = SessionLocal()
     try:
         seed_permissions(db)
     finally:
         db.close()
-    
+
     logger.info("Database initialized and permissions seeded")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down...")
 
 
 # Create app
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    lifespan=lifespan
-)
+app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION, lifespan=lifespan)
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -67,7 +88,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "An unexpected error occurred", "error": str(exc)}
+        content={"detail": "An unexpected error occurred. Please try again later."},
     )
 
 
@@ -105,4 +126,5 @@ app.include_router(saas.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

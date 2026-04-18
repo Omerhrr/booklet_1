@@ -1,0 +1,18 @@
+<div id="dashboard-stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Total Sales</p>
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (stats.total_sales if stats else 0)|currency }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Total Expenses</p>
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (stats.total_expenses if stats else 0)|currency }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Net Profit</p>
+        <p class="text-xl font-bold {{ 'text-green-600' if (stats.net_profit if stats else 0) >= 0 else 'text-red-600' }}">{{ (stats.net_profit if stats else 0)|currency }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Cash Balance</p>
+        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ (stats.cash_balance if stats else 0)|currency }}</p>
+    </div>
+</div>

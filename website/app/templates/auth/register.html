@@ -33,7 +33,7 @@
                     <div>
                         <p class="font-medium text-gray-900 dark:text-white">{{ selected_plan.name }} Plan</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400">
-                            ${{ selected_plan.monthly_price }}/month
+                            {{ selected_plan.monthly_price | currency }}/month
                         </p>
                     </div>
                 </div>
@@ -163,7 +163,7 @@
                     class="block p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
                     <p class="font-semibold text-gray-900 dark:text-white">{{ plan.name }}</p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
-                        ${{ plan.monthly_price }}/mo
+                        {{ plan.monthly_price | currency }}/mo
                     </p>
                 </a>
                 {% endfor %}

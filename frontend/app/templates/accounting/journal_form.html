@@ -2,7 +2,7 @@
 
 {% block extra_head %}
 <script>
-document.addEventListener('alpine:init', () => {
+function registerJournalForm() {
     Alpine.data('journalForm', () => ({
         lines: [],
         accounts: {{ accounts | tojson }},
@@ -46,7 +46,12 @@ document.addEventListener('alpine:init', () => {
             form.submit();
         }
     }));
-});
+}
+if (window.Alpine) {
+    registerJournalForm();
+} else {
+    document.addEventListener('alpine:init', registerJournalForm);
+}
 </script>
 {% endblock %}
 

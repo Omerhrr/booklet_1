@@ -318,7 +318,7 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">Low Stock</p>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center">
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard.stats.total_other_income if dashboard.stats else 0|currency }}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ (dashboard.stats.total_other_income if dashboard.stats else 0)|currency }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Other Income</p>
                 </div>
             </div>

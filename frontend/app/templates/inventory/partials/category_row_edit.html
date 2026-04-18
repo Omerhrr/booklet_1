@@ -1,0 +1,36 @@
+<tr class="bg-yellow-50 dark:bg-yellow-900/20 transition" id="category-{{ category.id }}">
+    <form hx-put="{{ url_for('inventory.edit_category', category_id=category.id) }}"
+          hx-target="#category-{{ category.id }}"
+          hx-swap="outerHTML"
+          class="contents">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <input type="text" name="name" value="{{ category.name }}" required
+                        class="text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-gray-900 dark:text-white">
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ category.product_count|default(0) }}</td>
+        <td class="px-6 py-4">
+            <input type="text" name="description" value="{{ category.description|default('') }}"
+                class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-gray-500 dark:text-gray-400 w-full">
+        </td>
+        <td class="px-6 py-4 text-right">
+            <div class="flex items-center justify-end gap-2">
+                <button type="submit" class="text-green-600 dark:text-green-500 hover:underline text-sm">Save</button>
+                <button type="button"
+                        hx-get="{{ url_for('inventory.get_category', category_id=category.id) }}"
+                        hx-target="#category-{{ category.id }}"
+                        hx-swap="outerHTML"
+                        class="text-gray-500 dark:text-gray-400 hover:underline text-sm">Cancel</button>
+            </div>
+        </td>
+    </form>
+</tr>

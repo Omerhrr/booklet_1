@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block body %}
-<div id="main-container" class="flex">
+<div id="main-container" class="flex" hx-boost="true" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML transition:0.15s" hx-push-url="true">
     <!-- Sidebar -->
     <aside 
         :class="{
@@ -13,6 +13,7 @@
         }" 
         class="fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700"
         aria-label="Sidebar"
+        @click="if ($event.target.closest('a') && window.innerWidth < 640) { sidebarOpen = false }"
     >
         <div class="h-full px-3 py-4 overflow-y-auto">
             <!-- Logo -->
@@ -370,7 +371,7 @@
             
             <!-- Logout -->
             <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                <a href="{{ url_for('auth.logout') }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                <a href="{{ url_for('auth.logout') }}" hx-boost="false" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/>
                     </svg>
@@ -378,7 +379,8 @@
                 </a>
             </div>
             
-            <!-- Debug: Show permissions and plan (for all users to troubleshoot) -->
+            <!-- Debug: Show permissions and plan (superusers only) -->
+            {% if session.get('is_superuser') %}
             <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700" :class="{ 'sm:hidden': sidebarCollapsed }">
                 <details class="text-xs">
                     <summary class="p-2 text-gray-500 dark:text-gray-400 cursor-pointer">Debug: Session Info</summary>
@@ -407,13 +409,14 @@
                             <li class="text-red-500">No permissions in session!</li>
                             {% endfor %}
                         </ul>
-                        <form method="POST" action="{{ url_for('auth.refresh_permissions') }}" class="mt-2">
+                        <form method="POST" action="{{ url_for('auth.refresh_permissions') }}" hx-boost="false" class="mt-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="text-primary-600 hover:underline text-xs">Refresh Permissions</button>
                         </form>
                     </div>
                 </details>
             </div>
+            {% endif %}
         </div>
     </aside>
     
@@ -421,8 +424,14 @@
     <div class="flex-1 transition-all duration-300" :class="sidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
         <!-- Header -->
         <header class="sticky top-0 z-30 flex items-center justify-between p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b dark:border-gray-700">
-            <!-- Sidebar Toggle Button -->
-            <button @click="sidebarCollapsed = !sidebarCollapsed; $dispatch('sidebar-toggle')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+            <!-- Mobile hamburger (visible only on mobile) -->
+            <button @click="sidebarOpen = true" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition sm:hidden">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <!-- Desktop collapse toggle (visible only on desktop) -->
+            <button @click="sidebarCollapsed = !sidebarCollapsed; $dispatch('sidebar-toggle')" class="hidden sm:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
                 <svg x-show="!sidebarCollapsed" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
                 </svg>
@@ -451,7 +460,7 @@
                     <div x-show="openBranch" @click.away="openBranch = false" x-transition
                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
                         {% for branch in (session.get('branches') or []) %}
-                        <form method="POST" action="{{ url_for('settings.set_branch', branch_id=branch.get('id')) }}" class="block">
+                        <form method="POST" action="{{ url_for('settings.set_branch', branch_id=branch.get('id')) }}" hx-boost="false" class="block">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="w-full text-left px-4 py-2 text-sm {{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' if session.get('selected_branch_id') == branch.get('id') else 'text-gray-700 dark:text-gray-300' }} hover:bg-gray-100 dark:hover:bg-gray-700">
                                 {{ branch.get('name') }}
@@ -495,7 +504,7 @@
         </header>
         
         <!-- Main Content Area -->
-        <main class="p-4 sm:p-6 lg:p-8">
+        <main id="main-content" class="p-4 sm:p-6 lg:p-8">
             {% block content %}{% endblock %}
         </main>
     </div>

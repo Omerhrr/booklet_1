@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div x-data="{ yearly: false }">
 <!-- Pricing Hero -->
 <section class="hero-gradient py-12 sm:py-16 md:py-20">
     <div class="max-w-screen-xl mx-auto px-4 text-center">
@@ -12,7 +13,7 @@
         </p>
         
         <!-- Billing Toggle -->
-        <div class="flex items-center justify-center gap-4 mt-8" x-data="{ yearly: false }">
+        <div class="flex items-center justify-center gap-4 mt-8">
             <span class="text-gray-300" :class="{ 'text-white font-medium': !yearly }">Monthly</span>
             <button @click="yearly = !yearly" class="relative w-14 h-8 bg-gray-600 rounded-full transition-colors" :class="{ 'bg-blue-600': yearly }">
                 <span class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform" :class="{ 'translate-x-6': yearly }"></span>
@@ -55,8 +56,8 @@
                         {% if plan.slug == 'enterprise' %}For large organizations{% endif %}
                     </p>
                     <div class="flex items-baseline justify-center gap-1">
-                        <span class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white" x-data="{ yearly: false }" x-init="yearly = window.location.search.includes('yearly')" x-text="yearly ? '{{ plan.yearly_price | currency }}' : '{{ plan.monthly_price | currency }}'">{{ plan.monthly_price | currency }}</span>
-                        <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">/{% if request.args.get('yearly') %}year{% else %}month{% endif %}</span>
+                        <span class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white" x-text="yearly ? '{{ plan.yearly_price | currency }}' : '{{ plan.monthly_price | currency }}'"></span>
+                        <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400" x-text="yearly ? '/year' : '/month'"></span>
                     </div>
                 </div>
                 
@@ -139,6 +140,7 @@
         </div>
     </div>
 </section>
+</div>
 
 <!-- Features Comparison -->
 <section class="py-12 sm:py-16 md:py-20 bg-white dark:bg-gray-900">

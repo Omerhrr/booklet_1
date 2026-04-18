@@ -1,6 +1,7 @@
 """
 Database Configuration
 """
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -16,7 +17,7 @@ db_url = settings.database_url
 engine = create_engine(
     db_url,
     connect_args={"check_same_thread": False} if "sqlite" in db_url else {},
-    echo=settings.DEBUG
+    echo=settings.DEBUG,
 )
 
 # Session factory
@@ -42,12 +43,70 @@ def init_db():
     """Initialize database tables"""
     # Import all models to register them with Base
     from app.models import (
-        Business, User, Branch, Permission, Role, UserBranchRole, RolePermission,
-        Account, JournalVoucher, LedgerEntry, Budget, BudgetItem, FixedAsset,
-        Customer, Vendor, Category, Product, StockAdjustment,
-        SalesInvoice, SalesInvoiceItem, Payment, CreditNote, CreditNoteItem,
-        PurchaseBill, PurchaseBillItem, DebitNote, DebitNoteItem,
-        Employee, PayrollConfig, Payslip, BankAccount, FundTransfer, Expense,
-        OtherIncome, AuditLog, Analysis, Dashboard, SavedFilter
+        Business,
+        User,
+        Branch,
+        Permission,
+        Role,
+        UserBranchRole,
+        RolePermission,
+        Account,
+        JournalVoucher,
+        LedgerEntry,
+        Budget,
+        BudgetItem,
+        FixedAsset,
+        Customer,
+        Vendor,
+        Category,
+        Product,
+        StockAdjustment,
+        SalesInvoice,
+        SalesInvoiceItem,
+        Payment,
+        CreditNote,
+        CreditNoteItem,
+        PurchaseBill,
+        PurchaseBillItem,
+        DebitNote,
+        DebitNoteItem,
+        Employee,
+        PayrollConfig,
+        Payslip,
+        BankAccount,
+        FundTransfer,
+        Expense,
+        OtherIncome,
+        AuditLog,
+        Analysis,
+        Dashboard,
+        SavedFilter,
+        SubscriptionPlan,
+        Subscription,
+        PaymentHistory,
+        BlogPost,
+        WebsiteContent,
+        ContactSubmission,
+        WebsiteUser,
+        CashBookEntry,
+        BankStatementLine,
+        BankReconciliationRecord,
+        BadDebt,
+        FiscalYear,
+        FiscalPeriod,
+        OpeningBalanceEntry,
+        ClosingEntry,
+        BankReconciliationAdjustment,
+        DepreciationRecord,
+        AISetting,
+        AIConversation,
+        AIMessage,
+        AIUsageLog,
+        AgentConfiguration,
+        AgentExecution,
+        AgentFinding,
+        DocWizardSession,
+        DocWizardMessage,
     )
+
     Base.metadata.create_all(bind=engine)

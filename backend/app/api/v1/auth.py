@@ -1,17 +1,34 @@
 """
 Authentication API Routes
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.core.database import get_db
-from app.core.security import create_access_token, get_password_hash, get_current_user
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    get_password_hash,
+    get_current_user,
+)
 from app.core.config import settings
-from app.schemas import LoginRequest, SignupRequest, Token, UserResponse, MessageResponse
+from app.schemas import (
+    LoginRequest,
+    SignupRequest,
+    Token,
+    UserResponse,
+    MessageResponse,
+)
 from app.services.user_service import UserService
 from app.services.business_service import BusinessService, BranchService
-from app.services.permission_service import RoleService, seed_permissions, PermissionService
+from app.services.permission_service import (
+    RoleService,
+    seed_permissions,
+    PermissionService,
+)
 from app.services.audit_service import AuditService, AuditAction
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -26,16 +43,14 @@ def get_client_info(request: Request) -> tuple:
         ip_address = request.client.host
     else:
         ip_address = "unknown"
-    
+
     user_agent = request.headers.get("User-Agent", "")[:500]
     return ip_address, user_agent
 
 
 @router.post("/signup", response_model=dict)
 async def signup(
-    signup_data: SignupRequest,
-    request: Request,
-    db: Session = Depends(get_db)
+    signup_data: SignupRequest, request: Request, db: Session = Depends(get_db)
 ):
     """Register a new business and admin user"""
     user_service = UserService(db)
@@ -43,9 +58,9 @@ async def signup(
     branch_service = BranchService(db)
     role_service = RoleService(db)
     audit_service = AuditService(db)
-    
+
     ip_address, user_agent = get_client_info(request)
-    
+
     # Check if username exists
     if user_service.get_by_username(signup_data.username):
         audit_service.log(
@@ -57,13 +72,13 @@ async def signup(
             request_method="POST",
             request_path="/api/v1/auth/signup",
             status="failure",
-            error_message="Username already registered"
+            error_message="Username already registered",
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
+            detail="Username already registered",
         )
-    
+
     # Check if email exists
     if user_service.get_by_email(signup_data.email):
         audit_service.log(
@@ -75,44 +90,43 @@ async def signup(
             request_method="POST",
             request_path="/api/v1/auth/signup",
             status="failure",
-            error_message="Email already registered"
+            error_message="Email already registered",
         )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
-    
+
     try:
         # Create business
-        business = business_service.create(signup_data.model_dump(include={"business_name"}))
-        
+        business = business_service.create(
+            signup_data.model_dump(include={"business_name"})
+        )
+
         # Seed permissions if needed
         seed_permissions(db)
-        
+
         # Create default admin role
         admin_role = role_service.create_default_roles_for_business(business.id)
-        
+
         # Create user
         user_data = {
             "username": signup_data.username,
             "email": signup_data.email,
-            "password": signup_data.password
+            "password": signup_data.password,
         }
         user = user_service.create(user_data, business.id, is_superuser=True)
-        
+
         # Create default branch
         branch = branch_service.create(
-            {"name": "Main Branch", "currency": "USD"},
-            business.id,
-            is_default=True
+            {"name": "Main Branch", "currency": "USD"}, business.id, is_default=True
         )
-        
+
         # Assign role to user
         user_service.assign_role(user.id, branch.id, admin_role.id)
-        
+
         # Create default chart of accounts
         business_service.create_default_chart_of_accounts(business.id)
-        
+
         # Log successful signup
         audit_service.log(
             action=AuditAction.USER_CREATED,
@@ -127,35 +141,43 @@ async def signup(
             user_agent=user_agent,
             request_method="POST",
             request_path="/api/v1/auth/signup",
-            new_values={"username": user.username, "email": user.email, "business_name": business.name}
+            new_values={
+                "username": user.username,
+                "email": user.email,
+                "business_name": business.name,
+            },
         )
-        
+
         db.commit()
-        
-        # Create token
+
         access_token = create_access_token(
             data={"sub": user.username, "business_id": business.id}
         )
-        
+        refresh_token = create_refresh_token(
+            data={"sub": user.username, "business_id": business.id}
+        )
+
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "user": {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "business_id": business.id
-            }
+                "business_id": business.id,
+            },
         }
-        
+
     except Exception as e:
         db.rollback()
         # Log the actual error but don't expose it to the user
         import logging
+
         logging.error(f"Signup failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create account. Please try again later."
+            detail="Failed to create account. Please try again later.",
         )
 
 
@@ -164,16 +186,16 @@ async def login(
     login_data: LoginRequest,
     request: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Login and get access token"""
     user_service = UserService(db)
     audit_service = AuditService(db)
-    
+
     ip_address, user_agent = get_client_info(request)
-    
+
     user = user_service.get_by_username(login_data.username)
-    
+
     if not user or not user_service.verify_password(user, login_data.password):
         # Log failed login attempt
         audit_service.log(
@@ -185,15 +207,15 @@ async def login(
             request_method="POST",
             request_path="/api/v1/auth/login",
             status="failure",
-            error_message="Invalid credentials"
+            error_message="Invalid credentials",
         )
         db.commit()
-        
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
+            detail="Invalid username or password",
         )
-    
+
     if not user.is_active:
         audit_service.log(
             action=AuditAction.LOGIN_FAILED,
@@ -208,21 +230,23 @@ async def login(
             request_method="POST",
             request_path="/api/v1/auth/login",
             status="failure",
-            error_message="Account is disabled"
+            error_message="Account is disabled",
         )
         db.commit()
-        
+
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is disabled"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled"
         )
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username, "business_id": user.business_id},
-        expires_delta=access_token_expires
+        expires_delta=access_token_expires,
     )
-    
+    refresh_token = create_refresh_token(
+        data={"sub": user.username, "business_id": user.business_id}
+    )
+
     # Log successful login
     audit_service.log(
         action=AuditAction.LOGIN,
@@ -235,21 +259,78 @@ async def login(
         ip_address=ip_address,
         user_agent=user_agent,
         request_method="POST",
-        request_path="/api/v1/auth/login"
+        request_path="/api/v1/auth/login",
     )
-    
+
     db.commit()
-    
-    # Set cookie with security settings
+
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         max_age=int(access_token_expires.total_seconds()),
         samesite="lax",
-        secure=settings.is_production  # Only secure in production
+        secure=settings.is_production,
     )
-    
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=7 * 24 * 60 * 60,
+        samesite="lax",
+        secure=settings.ENVIRONMENT == "production",
+        path="/api/v1/auth",
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(request: Request, db: Session = Depends(get_db)):
+    """Refresh access token using refresh token"""
+    refresh_token = None
+
+    try:
+        body = await request.json()
+        refresh_token = body.get("refresh_token")
+    except:
+        pass
+
+    if not refresh_token:
+        refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token required",
+        )
+
+    payload = decode_access_token(refresh_token)
+    if payload is None or payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    user_service = UserService(db)
+    user = user_service.get_by_username(username)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+
+    access_token = create_access_token(
+        data={"sub": user.username, "business_id": user.business_id}
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -257,13 +338,13 @@ async def login(
 async def logout(
     request: Request,
     response: Response,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Logout and clear token"""
     audit_service = AuditService(db)
     ip_address, user_agent = get_client_info(request)
-    
+
     # Log logout
     if current_user:
         audit_service.log(
@@ -277,54 +358,65 @@ async def logout(
             ip_address=ip_address,
             user_agent=user_agent,
             request_method="POST",
-            request_path="/api/v1/auth/logout"
+            request_path="/api/v1/auth/logout",
         )
         db.commit()
-    
-    response.delete_cookie(key="access_token")
+
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        samesite="lax",
+        secure=settings.is_production,
+    )
+    response.delete_cookie("refresh_token", httponly=True, samesite="lax")
     return {"message": "Logged out successfully"}
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(
-    current_user = Depends(get_current_user)
-):
+async def get_current_user_info(current_user=Depends(get_current_user)):
     """Get current user info"""
     return current_user
 
 
 @router.get("/permissions")
 async def get_user_permissions(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get current user's permissions, filtered by plan limits.
-    
+
     Plan restrictions apply to ALL users including superusers.
     Premium feature permissions are removed for Basic plan users.
     """
     from app.models import Subscription, SubscriptionPlan
-    
+
     # Premium permission prefixes that require Premium plan or higher
     PREMIUM_PERMISSION_PREFIXES = [
-        'ai:', 'agents:', 'doc_wizard:',
-        'budgets:', 'fixed_assets:',
-        'employees:', 'payroll:',  # HR module
+        "ai:",
+        "agents:",
+        "doc_wizard:",
+        "budgets:",
+        "fixed_assets:",
+        "employees:",
+        "payroll:",  # HR module
     ]
-    
+
     # Get the user's subscription plan
-    subscription = db.query(Subscription).filter(
-        Subscription.business_id == current_user.business_id
-    ).first()
-    
-    plan_slug = 'basic'  # Default to most restrictive
-    if subscription and subscription.status == 'active':
-        plan = db.query(SubscriptionPlan).filter(
-            SubscriptionPlan.id == subscription.plan_id
-        ).first()
+    subscription = (
+        db.query(Subscription)
+        .filter(Subscription.business_id == current_user.business_id)
+        .first()
+    )
+
+    plan_slug = "basic"  # Default to most restrictive
+    if subscription and subscription.status == "active":
+        plan = (
+            db.query(SubscriptionPlan)
+            .filter(SubscriptionPlan.id == subscription.plan_id)
+            .first()
+        )
         if plan:
             plan_slug = plan.slug
-    
+
     if current_user.is_superuser:
         # Superusers have all permissions, but still filter by plan
         permission_service = PermissionService(db)
@@ -333,47 +425,19 @@ async def get_user_permissions(
     else:
         permission_service = PermissionService(db)
         permissions = list(permission_service.get_user_permissions(current_user))
-    
+
     # Filter out premium permissions for Basic plan users
     # Plan restrictions apply to ALL users including superusers
-    if plan_slug not in ['premium', 'advanced', 'enterprise']:
-        original_count = len(permissions)
+    if plan_slug not in ["premium", "advanced", "enterprise"]:
         permissions = [
-            p for p in permissions 
+            p
+            for p in permissions
             if not any(p.startswith(prefix) for prefix in PREMIUM_PERMISSION_PREFIXES)
         ]
-        filtered_count = original_count - len(permissions)
-    else:
-        filtered_count = 0
-    
-    # Debug info
-    debug_info = {
-        "user_id": current_user.id,
-        "username": current_user.username,
-        "business_id": current_user.business_id,
-        "is_superuser": current_user.is_superuser,
-        "plan_slug": plan_slug,
-        "permissions_count": len(permissions),
-        "filtered_premium_count": filtered_count,
-        "roles_count": len(current_user.roles) if current_user.roles else 0,
-        "roles": []
-    }
-    
-    if current_user.roles:
-        for ur in current_user.roles:
-            role_info = {
-                "role_id": ur.role_id,
-                "role_name": ur.role.name if ur.role else None,
-                "branch_id": ur.branch_id
-            }
-            if ur.role and hasattr(ur.role, 'permission_links'):
-                role_info["permissions_count"] = len(ur.role.permission_links) if ur.role.permission_links else 0
-            debug_info["roles"].append(role_info)
-    
+
     return {
-        "permissions": permissions, 
+        "permissions": permissions,
         "is_superuser": current_user.is_superuser,
         "plan_slug": plan_slug,
         "business_id": current_user.business_id,
-        "debug": debug_info
     }
